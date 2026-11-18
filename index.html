@@ -16,7 +16,7 @@
 :root {
   --bg: #f5f5f2; --card: #ffffff; --fg: #292829; --muted: #666566; --line: #deddd8;
   --accent: #0a7d1a; --accent-fg: #ffffff; --accent-soft: #e4f2e3;
-  --lime: #a9fe00; --green: #009d01; --orange: #fd7e00;
+  --lime: #a9fe00; --green: #009d01; --orange: #fd7e00; --graphite: #585758;
   --ok: #0a7d1a; --ok-soft: #e4f2e3; --ko: #c2500a; --ko-soft: #fdeddf;
   --rule-bg: #fff2e6; --rule-line: #fd7e00;
   --fig-fg: #292829; --fig-q: #0a7d1a; --fig-muted: #585758; --fig-angle: #3b3a3b; --fig-bg: #ffffff;
@@ -26,6 +26,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #1b1a1b; --card: #252425; --fg: #efeeee; --muted: #a8a7a8; --line: #3a393a;
+    --graphite: #a8a7a8;
     --accent: #a9fe00; --accent-fg: #172306; --accent-soft: #2c3322;
     --ok: #86e486; --ok-soft: #1f3322; --ko: #ff9d52; --ko-soft: #3b2a1d;
     --rule-bg: #3a2b1b; --rule-line: #fd7e00;
@@ -177,6 +178,15 @@ table.rtab td { overflow-x: auto; }
 table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
 .sheet ul { padding-left: 20px; margin: 8px 0; }
 .sheet li { margin: 4px 0; }
+
+/* ---- Réponses multiples ---- */
+.pill.multi { background: var(--rule-bg); color: var(--fg); border: 1px solid var(--rule-line); margin-left: 6px; }
+.choice.multi .tag { border-radius: 8px; }
+.choice.multi.sel .tag { background: var(--accent); color: var(--accent-fg); }
+.choice.miss { border-style: dashed; border-color: var(--ok); }
+.choice.miss .tag { background: transparent; color: var(--ok); border: 2px solid var(--ok); }
+.alist { margin: 4px 0 10px; padding-left: 20px; }
+.alist li { margin: 4px 0; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -743,7 +753,6 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       text: 'Calculer le produit scalaire :',
       math: dotTex(specTex(u, COLORS[0], true), specTex(v, COLORS[1], true)),
       choices: ch.choices, correctIndex: ch.correctIndex, steps,
-      ref: 'Fiche, paragraphes 2.2 et 2.3',
     };
   }
   function makeCross(opts) {
@@ -767,7 +776,6 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       text: 'Calculer le produit vectoriel' + (neat ? ' :' : ', résultat exprimé dans la base $' + baseNoteTex(bases, outBase) + '$ :'),
       math: wedgeTex(specTex(u, COLORS[0], true), specTex(v, COLORS[1], true)),
       choices: ch.choices, correctIndex: ch.correctIndex, steps,
-      ref: 'Fiche, paragraphes 3.3 et 3.4',
     };
   }
   function makeMixed(opts) {
@@ -799,7 +807,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       steps.push('Deux des trois vecteurs sont colinéaires (ici égaux au signe près) : les trois vecteurs sont coplanaires, donc le produit mixte est nul.');
     } else {
       const crTex = E.vecResultTex(cr, bases, outBase);
-      steps.push('Calcul du produit vectoriel des deux premiers vecteurs (méthode de la fiche) :' + M(wedgeTex(vtex(u), vtex(v)) + ' = ' + crTex));
+      steps.push('Calcul du produit vectoriel des deux premiers vecteurs :' + M(wedgeTex(vtex(u), vtex(v)) + ' = ' + crTex));
       steps.push('Puis produit scalaire avec le troisième vecteur :' + M('\\left(' + crTex + '\\right)\\cdot ' + vtex(w) + ' = ' + E.polyTex(baseRes)));
       if (E.isZeroPoly(baseRes)) steps.push('Résultat nul : les trois vecteurs sont coplanaires.');
     }
@@ -812,7 +820,6 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       text: 'Calculer le produit mixte :',
       math: '(' + [u, v, w].map((s, i) => specTex(s, COLORS[i])).join(',\\,') + ')',
       choices: ch.choices, correctIndex: ch.correctIndex, steps,
-      ref: 'Fiche, paragraphes 4.1 et 4.2',
     };
   }
 
@@ -957,13 +964,13 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
 })(typeof window !== 'undefined' ? window : globalThis);
 
 ;
-// Liaisons normalisées : schémas, mobilités, torseurs cinématique et d'action mécanique (fiche PT)
+// Liaisons normalisées : schémas, mobilités, torseurs cinématique et d'action mécanique 
 (function (root) {
   'use strict';
   const QM = root.Questions || require('./questions.js');
   const { pick, shuffle, randint, R } = QM.util;
 
-  // Convention de la fiche : mobilités [Rx, Ry, Rz, Tx, Ty, Tz] ; torseur d'action [X, Y, Z, L, M, N]
+  // Convention : mobilités [Rx, Ry, Rz, Tx, Ty, Tz] ; torseur d'action [X, Y, Z, L, M, N]
   // am : 1 = composante non nulle. Cas particuliers : helico (couplage par le pas p).
   const LIAISONS = [
     { id: 'encastrement', nom: 'Encastrement', carac: '', pt: 'C', valid: 'en tout point', mob: [0, 0, 0, 0, 0, 0], am: [1, 1, 1, 1, 1, 1], img: false },
@@ -1019,7 +1026,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   }
   const key = (t) => t.flags.join('') + (t.coup ? t.coup.sign + t.coup.f : '');
 
-  // Torseurs corrects de la fiche (pas à droite par défaut)
+  // Torseurs corrects (pas à droite par défaut)
   function correct(l, kind, pas) {
     if (kind === 'am') {
       const flags = l.am.slice();
@@ -1115,7 +1122,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   }
 
   // ---------- Questions ----------
-  const mk = (o) => Object.assign({ theme: 'liaisons', ref: 'Fiche, tableau des liaisons normalisées' }, o);
+  const mk = (o) => Object.assign({ theme: 'liaisons' }, o);
   const pickL = (list) => pick(list);
 
   function pickDistinct(pool, l, kind, n, mutual) {
@@ -1140,7 +1147,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       text: kind === '2d' ? 'Quelle liaison est représentée par ce schéma plan (2D) ?' : 'Quelle liaison est représentée par ce schéma spatial (3D) ?',
       math: null, choiceKind: 'text',
       choices: all.map((x) => x.l.nom), correctIndex: all.findIndex((x) => x.ok),
-      steps: ['Il s\'agit de la liaison **' + l.nom + '**' + (l.carac ? ' (' + l.carac + ')' : '') + '.', 'Les schémas des liaisons normalisées sont à reconnaître : voir le tableau de la fiche.'].map((t) => t.replace(/\*\*/g, '')),
+      steps: ['Il s\'agit de la liaison **' + l.nom + '**' + (l.carac ? ' (' + l.carac + ')' : '') + '.', 'Les schémas des liaisons normalisées sont à reconnaître par leur forme : axe de rotation, translation, contact ponctuel ou linéique.'].map((t) => t.replace(/\*\*/g, '')),
       showImageAfter: false,
     });
   }
@@ -1243,11 +1250,46 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     steps.push(M(sym + '=' + shown));
     return clean(mk({
       family: 'l_inv', famLabel: 'Retrouver la liaison',
-      text: 'Quelle liaison est associée ' + (kind === 'mob' ? 'à ces mobilités' : kind === 'cin' ? 'à ce torseur cinématique' : 'à ce torseur d\'action mécanique') + ' (axes et normales comme dans la fiche, ' + (l.helico ? 'pas à ' + (pas === 'gauche' ? 'gauche' : 'droite') + ', ' : '') + 'pièce 2 par rapport à la pièce 1) ?',
+      text: 'Quelle liaison est associée ' + (kind === 'mob' ? 'à ces mobilités' : kind === 'cin' ? 'à ce torseur cinématique' : 'à ce torseur d\'action mécanique') + ' (avec les orientations usuelles des axes et des normales, ' + (l.helico ? 'pas à ' + (pas === 'gauche' ? 'gauche' : 'droite') + ', ' : '') + 'pièce 2 par rapport à la pièce 1) ?',
       math: sym + (kind === 'mob' ? '=' : '=') + shown,
       choiceKind: 'text', choices: all.map((x) => x.l.nom), correctIndex: all.findIndex((x) => x.ok), steps,
     }));
   }
+
+  // ---------- Questions à réponses multiples ----------
+  const MOBSYM = ['R_x', 'R_y', 'R_z', 'T_x', 'T_y', 'T_z'];
+  const mq = (family, famLabel, text, kind, items, steps) => ({ theme: 'liaisons', family, famLabel, text, math: null, choiceKind: kind, multi: true,
+    choices: items.map((x) => x.c), correctSet: items.map((x, i) => (x.ok ? i : -1)).filter((i) => i >= 0), steps });
+  const head = (l) => 'la liaison ' + nomLongTex(l) + (l.carac ? ', ' + l.carac : '');
+  function mMob() {
+    const l = pick(LIAISONS.filter((x) => x.id !== 'encastrement'));
+    return clean(mq('l_mob', 'Mobilités', 'Quelles sont les mobilités de ' + head(l) + ' ?', 'math',
+      MOBSYM.map((c, i) => ({ c, ok: !!l.mob[i] })), [mobSentence(l), M('\\text{Mobilités}=' + mobTex(l.mob))]));
+  }
+  function mCin() {
+    const l = pick(LIAISONS.filter((x) => x.id !== 'encastrement'));
+    const sym = (i) => (i < 3 ? omega(i) : (l.id === 'glissiere' && i === 3 ? 'u_{21}' : vel(i - 3, l.pt)));
+    const cin = correct(l, 'cin', 'droite');
+    return clean(mq('l_cin', 'Torseur cinématique', 'Quelles composantes du torseur cinématique ' + tex('\\{\\mathcal{V}_{2/1}\\}') + ' de ' + head(l) + ' sont non nulles (exprimé en ' + tex(l.pt) + ') ?', 'math',
+      [0, 1, 2, 3, 4, 5].map((i) => ({ c: sym(i), ok: !!l.mob[i] })), cinSteps(l, 'droite').concat([M('\\{\\mathcal{V}_{2/1}\\}_{' + l.pt + ',b}=' + cinTex(cin, l))])));
+  }
+  function mAm() {
+    const l = pick(LIAISONS.filter((x) => x.id !== 'encastrement' && !x.helico));
+    const am = correct(l, 'am', 'droite');
+    return clean(mq('l_am', 'Torseur d\'action mécanique', 'Quelles composantes du torseur d\'action mécanique ' + tex('\\{\\mathcal{T}_{2\\to1}\\}') + ' de ' + head(l) + ' sont non nulles (exprimé en ' + tex(l.pt) + ') ?', 'math',
+      AMN.map((c, i) => ({ c, ok: !!l.am[i] })), amSteps(l, 'droite').concat([M('\\{\\mathcal{T}_{2\\to1}\\}_{' + l.pt + ',b}=' + amTex(am, l))])));
+  }
+  function mWhich() {
+    const m = randint(0, 4);
+    const T = LIAISONS.filter((l) => l.mob[m]), Fa = LIAISONS.filter((l) => !l.mob[m]);
+    const k = Math.min(pick([1, 2, 2, 3]), T.length);
+    const Ts = shuffle(T).slice(0, k), Fs = shuffle(Fa).slice(0, 6 - k);
+    const what = m < 3 ? 'la rotation ' + tex(MOBSYM[m]) : 'la translation ' + tex(MOBSYM[m]);
+    return clean(mq('l_inv', 'Retrouver la liaison', 'Quelles liaisons autorisent ' + what + ' (avec les orientations usuelles des axes et des normales) ?', 'text',
+      shuffle(Ts.map((l) => ({ c: l.nom, ok: true })).concat(Fs.map((l) => ({ c: l.nom, ok: false })))),
+      Ts.concat(Fs).map((l) => l.nom + ' : ' + (l.mob.some((x) => x) ? l.mob.map((f, i) => (f ? tex(MOBSYM[i]) : null)).filter(Boolean).join(', ') : 'aucune mobilité') + '.')));
+  }
+  const MULTI = { l_mob: mMob, l_cin: mCin, l_am: mAm, l_inv: mWhich };
 
   const FAMILIES = {
     l_sch: () => clean(qSchema()),
@@ -1256,12 +1298,15 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     l_am: () => qTorsor('am'),
     l_inv: qInverse,
   };
-  function questionKey(q) { return q.family + '|' + q.text + '|' + (q.image || '') + '|' + (q.math || ''); }
-  function generateSet(families, n) {
+  function questionKey(q) { return q.family + '|' + q.text + '|' + (q.image || '') + '|' + (q.math || '') + (q.multi ? '|' + q.choices.join('~') : ''); }
+  function generateSet(families, n, opts) {
     const fams = families && families.length ? families : Object.keys(FAMILIES);
+    const mode = (opts && opts.choice) || 'single';
     const out = []; const seen = new Set(); let guard = 0, idx = 0;
     while (out.length < n && guard++ < n * 60) {
-      const q = FAMILIES[fams[idx % fams.length]](); idx++;
+      const f = fams[idx % fams.length]; idx++;
+      const multi = MULTI[f] && (mode === 'multi' || (mode === 'mix' && R.rand() < 0.4));
+      const q = multi ? MULTI[f]() : FAMILIES[f]();
       const k = questionKey(q);
       if (seen.has(k)) continue;
       seen.add(k); out.push(q);
@@ -1269,7 +1314,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
 
-  const api = { mobCount, LIAISONS, BY_ID, FAMILIES, generateSet, cinTex, amTex, mobTex, correct, key, nomLongTex, caracPhrase, amIndexOfMob, withImg, lookalike };
+  const api = { MULTI, mobCount, LIAISONS, BY_ID, FAMILIES, generateSet, cinTex, amTex, mobTex, correct, key, nomLongTex, caracPhrase, amIndexOfMob, withImg, lookalike };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Liaisons = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1288,17 +1333,9 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     r_hyp: 'Hypothèses',
     r_coh: 'Torseur de cohésion',
     r_quad: 'Moments quadratiques',
-    r_form: 'Formules du cours',
+    r_form: 'Formules',
     r_ordre: 'Ordres de grandeur',
     r_num: 'Application numérique',
-  };
-  const REF = {
-    r_hyp: 'Fiche RdM, section Hypothèses',
-    r_coh: 'Fiche RdM, section Torseur de cohésion',
-    r_quad: 'Fiche RdM, section Moments quadratiques',
-    r_form: 'Fiche RdM, section Résumé du cours',
-    r_ordre: 'Fiche RdM, section Vocabulaire et valeurs usuelles',
-    r_num: 'Fiche RdM, section Résumé du cours',
   };
 
   const BANK = [
@@ -1315,7 +1352,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       'Une dimension (la longueur) est grande devant les dimensions de la section droite',
       ['La section droite est toujours circulaire', 'Les trois dimensions sont du même ordre de grandeur', 'La ligne moyenne est toujours une courbe fermée'],
       'Modèle poutre : longueur grande devant les dimensions transversales, section droite constante ou à variation lente.', 'text'],
-    ['r_hyp', 'Quelles hypothèses portent sur le matériau dans ce cours de RdM ?',
+    ['r_hyp', 'Quelles hypothèses portent sur le matériau en RdM ?',
       'Homogène, isotrope et à comportement linéaire élastique (loi de Hooke)',
       ['Hétérogène, anisotrope et plastique', 'Homogène, anisotrope et visqueux', 'Isotrope, mais à comportement non linéaire dès les petites charges'],
       'Matériau homogène, isotrope, linéaire élastique : les relations $\\sigma=E\\varepsilon$ et $\\tau=G\\gamma$ s\'appliquent.', 'text'],
@@ -1454,7 +1491,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const all = shuffle([{ f: good, ok: true }].concat(wrong.slice(0, 3).map((f) => ({ f, ok: false }))));
     const phrase = { traction: 'une sollicitation de traction', cisaillement: 'une sollicitation de cisaillement', torsion: 'une sollicitation de torsion', flexion: 'une sollicitation de flexion simple dans le plan $(\\overrightarrow{x},\\overrightarrow{' + (plane === 'xy' ? 'y' : 'z') + '})$' }[k];
     return {
-      theme: 'rdm', family: 'r_coh', famLabel: FAM.r_coh, ref: REF.r_coh,
+      theme: 'rdm', family: 'r_coh', famLabel: FAM.r_coh,
       text: 'Quelle forme prend le torseur de cohésion pour ' + phrase + ' ?', math: null, choiceKind: 'math',
       choices: all.map((x) => cohTex(x.f)), correctIndex: all.findIndex((x) => x.ok),
       steps: [{
@@ -1471,7 +1508,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const f = k === 'flexion' && plane === 'xz' ? COH.flexion.fz : COH[k].f;
     const names = ['traction', 'cisaillement', 'torsion', 'flexion'];
     return {
-      theme: 'rdm', family: 'r_coh', famLabel: FAM.r_coh, ref: REF.r_coh,
+      theme: 'rdm', family: 'r_coh', famLabel: FAM.r_coh,
       text: 'À quelle sollicitation simple correspond ce torseur de cohésion ?', math: '\\{\\mathcal{T}_{coh}\\}_{G(x)}=' + cohTex(f), choiceKind: 'text',
       choices: names.map((x) => COH[x].nom), correctIndex: names.indexOf(k),
       steps: ['Composantes non nulles : ' + f.map((v, i) => (v ? '$' + SYM[i] + '$' : null)).filter(Boolean).join(', ') + '.',
@@ -1488,7 +1525,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     if (kind === 'math') steps.push('$$\\boxed{' + good + '}$$');
     else steps.push('Réponse : ' + good + (/[.!?]$/.test(good) ? '' : '.'));
     if (expl) steps.push(expl);
-    return { theme: 'rdm', family: fam, famLabel: FAM[fam], ref: REF[fam], text, math: null, choiceKind: kind === 'math' ? 'math' : 'text', choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps };
+    return { theme: 'rdm', family: fam, famLabel: FAM[fam], text, math: null, choiceKind: kind === 'math' ? 'math' : 'text', choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps };
   }
 
   // ---------- Ordres de grandeur ----------
@@ -1514,8 +1551,8 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     cand = cand.filter((x, i) => x !== v && cand.indexOf(x) === i);
     const wrong = (p === 'nu' ? shuffle(cand) : [cand[0]].concat(shuffle(cand.slice(1)))).slice(0, 3);
     const all = shuffle([{ x: v, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
-    const tbl = 'Valeurs de la fiche : acier $E=210$ GPa, $G=80$ GPa, $\\nu=0{,}3$, $R_e=450$ MPa ; aluminium $E=70$ GPa, $G=26$ GPa, $\\nu=0{,}3$, $R_e=250$ MPa.';
-    return { theme: 'rdm', family: 'r_ordre', famLabel: FAM.r_ordre, ref: REF.r_ordre, text: 'Quel est l\'ordre de grandeur ' + PROP[p].nom + ' pour ' + MAT[m].nom + ' ?', math: null, choiceKind: 'text', choices: all.map((x) => fmt(x.x)), correctIndex: all.findIndex((x) => x.ok), steps: ['Réponse : ' + fmt(v) + '.', tbl] };
+    const tbl = 'Valeurs usuelles : acier $E=210$ GPa, $G=80$ GPa, $\\nu=0{,}3$, $R_e=450$ MPa ; aluminium $E=70$ GPa, $G=26$ GPa, $\\nu=0{,}3$, $R_e=250$ MPa.';
+    return { theme: 'rdm', family: 'r_ordre', famLabel: FAM.r_ordre, text: 'Quel est l\'ordre de grandeur ' + PROP[p].nom + ' pour ' + MAT[m].nom + ' ?', math: null, choiceKind: 'text', choices: all.map((x) => fmt(x.x)), correctIndex: all.findIndex((x) => x.ok), steps: ['Réponse : ' + fmt(v) + '.', tbl] };
   }
   function qRg() {
     const m = pick(['acier', 'alu']); const Re = MAT[m].Re; const v = Re * 0.7;
@@ -1523,7 +1560,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const wrong = shuffle(cand).slice(0, 3);
     const all = shuffle([{ x: v, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
     const f = (x) => '$' + num(Math.round(x * 100) / 100) + '\\ \\mathrm{MPa}$';
-    return { theme: 'rdm', family: 'r_ordre', famLabel: FAM.r_ordre, ref: REF.r_ordre, text: 'Pour ' + MAT[m].nom + ' de limite élastique $R_e=' + Re + '$ MPa, quelle est la valeur approchée de la résistance au glissement $R_g$ ?', math: null, choiceKind: 'text', choices: all.map((x) => f(x.x)), correctIndex: all.findIndex((x) => x.ok), steps: ['$R_g\\approx0{,}7\\,R_e=0{,}7\\times' + Re + '=' + num(Math.round(v * 100) / 100) + '$ MPa.'] };
+    return { theme: 'rdm', family: 'r_ordre', famLabel: FAM.r_ordre, text: 'Pour ' + MAT[m].nom + ' de limite élastique $R_e=' + Re + '$ MPa, quelle est la valeur approchée de la résistance au glissement $R_g$ ?', math: null, choiceKind: 'text', choices: all.map((x) => f(x.x)), correctIndex: all.findIndex((x) => x.ok), steps: ['$R_g\\approx0{,}7\\,R_e=0{,}7\\times' + Re + '=' + num(Math.round(v * 100) / 100) + '$ MPa.'] };
   }
 
   // ---------- Applications numériques ----------
@@ -1545,7 +1582,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const all = shuffle([{ x: val, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
     return { choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{' + unit + '}$'), correctIndex: all.findIndex((o) => o.ok) };
   }
-  const NUM = (o) => Object.assign({ theme: 'rdm', family: 'r_num', famLabel: FAM.r_num, ref: REF.r_num, math: null, choiceKind: 'text' }, o);
+  const NUM = (o) => Object.assign({ theme: 'rdm', family: 'r_num', famLabel: FAM.r_num, math: null, choiceKind: 'text' }, o);
   const roundTo = (x, step) => Math.round(x / step) * step;
 
   function qNumSigma() {
@@ -1601,7 +1638,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const K = (t) => '$' + t + '$';
     const mk = (text, good, wrong, why) => {
       const all = shuffle([{ c: good, ok: true }].concat(shuffle(wrong).slice(0, 3).map((c) => ({ c, ok: false }))));
-      return { theme: 'rdm', family: 'r_quad', famLabel: FAM.r_quad, ref: REF.r_quad, text, math: null, choiceKind: 'math', choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps: ['$$\\boxed{' + good + '}$$', why] };
+      return { theme: 'rdm', family: 'r_quad', famLabel: FAM.r_quad, text, math: null, choiceKind: 'math', choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps: ['$$\\boxed{' + good + '}$$', why] };
     };
     if (kind === 'rect_z') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_z$ ?', 'I_z=\\dfrac{b\\,h^{3}}{12}', ['I_z=\\dfrac{b^{3}\\,h}{12}', 'I_z=\\dfrac{b\\,h^{3}}{3}', 'I_z=\\dfrac{b\\,h^{3}}{24}', 'I_z=\\dfrac{b\\,h^{2}}{12}'], '$I_z=\\int y^2\\,dS$ : la dimension selon $y$ (la hauteur $h$) est au cube.');
     if (kind === 'rect_y') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_y$ ?', 'I_y=\\dfrac{h\\,b^{3}}{12}', ['I_y=\\dfrac{b\\,h^{3}}{12}', 'I_y=\\dfrac{h\\,b^{3}}{3}', 'I_y=\\dfrac{h\\,b^{3}}{24}', 'I_y=\\dfrac{h\\,b^{2}}{12}'], '$I_y=\\int z^2\\,dS$ : la dimension selon $z$ (la largeur $b$) est au cube.');
@@ -1617,7 +1654,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const used = new Set([fmtNum(Iz)]); const wrong = [];
     for (const w of shuffle(alt)) { const s = fmtNum(w); if (!used.has(s) && wrong.length < 3) { used.add(s); wrong.push(w); } }
     const all = shuffle([{ x: Iz, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
-    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, ref: REF.r_quad, text: 'Quelle est la valeur de $I_z$ pour une section rectangulaire de largeur $b=' + b + '$ mm (selon $z$) et de hauteur $h=' + h + '$ mm (selon $y$) ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
+    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Quelle est la valeur de $I_z$ pour une section rectangulaire de largeur $b=' + b + '$ mm (selon $z$) et de hauteur $h=' + h + '$ mm (selon $y$) ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
       steps: ['$$I_z=\\dfrac{b\\,h^{3}}{12}=\\dfrac{' + b + '\\times' + h + '^{3}}{12}=\\boxed{' + fmtNum(Iz) + '\\ \\mathrm{mm^4}}$$'] });
   }
   function qHuygens() {
@@ -1627,9 +1664,93 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     const used = new Set([fmtNum(I)]); const wrong = [];
     for (const w of shuffle(alt)) { const s = fmtNum(w); if (w > 0 && !used.has(s) && wrong.length < 3) { used.add(s); wrong.push(w); } }
     const all = shuffle([{ x: I, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
-    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, ref: REF.r_quad, text: 'Une section rectangulaire $' + b + '\\times' + h + '$ mm² (hauteur ' + h + ' mm selon $y$) a pour moment quadratique $I_z(S,G)=' + fmtNum(Iz) + '$ mm⁴. Quel est $I_z(S,M)$ au point $M$ tel que $y_M=' + yM + '$ mm ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
+    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Une section rectangulaire $' + b + '\\times' + h + '$ mm² (hauteur ' + h + ' mm selon $y$) a pour moment quadratique $I_z(S,G)=' + fmtNum(Iz) + '$ mm⁴. Quel est $I_z(S,M)$ au point $M$ tel que $y_M=' + yM + '$ mm ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
       steps: ['Aire : $S=' + b + '\\times' + h + '=' + S + '$ mm².', '$$I_z(S,M)=I_z(S,G)+S\\,y_M^2=' + fmtNum(Iz) + '+' + S + '\\times' + yM + '^2=\\boxed{' + fmtNum(I) + '\\ \\mathrm{mm^4}}$$'] });
   }
+
+
+  // ---------- Questions à réponses multiples ----------
+  const mathBank = BANK.filter((e) => e[5] === 'math');
+  const allGoods = new Set(mathBank.map((e) => e[2]));
+  function multiQ(o) {
+    const items = o.fixed ? o.items : shuffle(o.items);
+    return { theme: 'rdm', family: o.family, famLabel: FAM[o.family], text: o.text, math: null, choiceKind: o.kind, multi: true,
+      choices: items.map((x) => x.c), correctSet: items.map((x, i) => (x.ok ? i : -1)).filter((i) => i >= 0), steps: o.steps };
+  }
+  function multiForm(fam) {
+    const pool = mathBank.filter((e) => e[0] === fam);
+    const k = Math.min(pick([1, 2, 2, 3]), pool.length);
+    const goods = shuffle(pool).slice(0, k);
+    const used = new Set(goods.map((e) => e[2]));
+    const cands = shuffle([].concat(...pool.map((e) => e[3].map((w) => ({ w, e })))));
+    const wrongs = [];
+    for (const c of cands) { if (!allGoods.has(c.w) && !used.has(c.w)) { used.add(c.w); wrongs.push(c); if (wrongs.length === 5 - k) break; } }
+    const steps = ['Relations exactes :'].concat(goods.map((e) => '$$' + e[2] + '$$'));
+    wrongs.forEach((c) => steps.push('$' + c.w + '$ est fausse, la forme exacte est $' + c.e[2] + '$.'));
+    return multiQ({ family: fam, kind: 'math', text: 'Quelles relations sont exactes ?', steps,
+      items: goods.map((e) => ({ c: e[2], ok: true })).concat(wrongs.map((c) => ({ c: c.w, ok: false }))) });
+  }
+  const UNITS = [
+    ['\\sigma', 'contrainte normale', 'MPa'], ['\\tau', 'contrainte tangentielle', 'MPa'], ['R_e', 'limite élastique', 'MPa'], ['R_m', 'limite à la rupture', 'MPa'], ['R_g', 'résistance au glissement', 'MPa'],
+    ['E', 'module d\'Young', 'GPa'], ['G', 'module de Coulomb', 'GPa'],
+    ['I_z', 'moment quadratique', 'mm4'], ['I_y', 'moment quadratique', 'mm4'], ['I_0', 'moment quadratique polaire', 'mm4'],
+    ['\\varepsilon_x', 'déformation longitudinale', '-'], ['\\nu', 'coefficient de Poisson', '-'],
+    ['\\gamma_x', 'rotation relative', 'rad/m'], ['S', 'aire de la section', 'mm2'],
+  ];
+  const UL = { MPa: '$\\mathrm{MPa}$', GPa: '$\\mathrm{GPa}$', mm4: '$\\mathrm{mm^4}$', '-': 'sans unité', 'rad/m': '$\\mathrm{rad/m}$', mm2: '$\\mathrm{mm^2}$' };
+  function multiUnits() {
+    const u = pick(['MPa', 'MPa', 'GPa', 'mm4', '-']);
+    const tr = UNITS.filter((x) => x[2] === u), fa = UNITS.filter((x) => x[2] !== u);
+    const k = Math.min(pick([1, 2, 2, 3]), tr.length);
+    const T = shuffle(tr).slice(0, k), Fs = shuffle(fa).slice(0, 5 - k);
+    const lab = (x) => '$' + x[0] + '$ : ' + x[1];
+    return multiQ({ family: 'r_ordre', kind: 'text',
+      text: u === '-' ? 'Quelles grandeurs sont sans unité ?' : 'Quelles grandeurs s\'expriment en ' + UL[u] + ' ?',
+      steps: T.concat(Fs).map((x) => '$' + x[0] + '$ (' + x[1] + ') : ' + UL[x[2]] + '.'),
+      items: T.map((x) => ({ c: lab(x), ok: true })).concat(Fs.map((x) => ({ c: lab(x), ok: false }))) });
+  }
+  function multiCoh() {
+    const k = pick(['torsion', 'flexion', 'flexion', 'traction']);
+    const plane = pick(['xy', 'xz']);
+    const f = k === 'flexion' ? (plane === 'xy' ? COH.flexion.f : COH.flexion.fz) : COH[k].f;
+    const phrase = { traction: 'une sollicitation de traction', torsion: 'une sollicitation de torsion', flexion: 'une sollicitation de flexion simple dans le plan $(\\overrightarrow{x},\\overrightarrow{' + (plane === 'xy' ? 'y' : 'z') + '})$' }[k];
+    const nz = f.map((v, i) => (v ? '$' + SYM[i] + '$' : null)).filter(Boolean).join(' et ');
+    return multiQ({ family: 'r_coh', kind: 'math', fixed: true, text: 'Quelles composantes du torseur de cohésion sont non nulles pour ' + phrase + ' ?',
+      steps: ['Composantes non nulles : ' + nz + '.', '$$\\{\\mathcal{T}_{coh}\\}_{G(x)}=' + cohTex(f) + '$$'],
+      items: SYM.map((c, i) => ({ c, ok: !!f[i] })) });
+  }
+  const POOLS = {
+    hyp: { fam: 'r_hyp', text: 'Quelles sont des hypothèses du modèle poutre en RdM ?',
+      T: ['Matériau homogène et isotrope', 'Comportement linéaire élastique (loi de Hooke)', 'Petits déplacements et petites déformations', 'Après déformation, les sections droites restent planes et perpendiculaires à la ligne moyenne', 'Longueur grande devant les dimensions de la section', 'Loin des points d\'application des efforts, seul le torseur des efforts compte'],
+      F: ['Matériau anisotrope par nature', 'Comportement plastique dès les faibles charges', 'Grandes déformations calculées par une loi non linéaire', 'Les sections droites se gauchissent librement en flexion', 'Dimensions de la section du même ordre que la longueur', 'La répartition locale des efforts d\'application est déterminante en tout point'] },
+    torsion: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour un arbre en torsion ?',
+      T: ['La contrainte tangentielle est nulle sur l\'axe', 'La contrainte tangentielle est maximale en périphérie', 'La contrainte tangentielle croît linéairement avec $r$', 'Le module de Coulomb $G$ intervient', 'Le moment quadratique polaire $I_0$ intervient'],
+      F: ['La contrainte tangentielle est uniforme sur la section', 'Le module d\'Young $E$ intervient dans la loi de Hooke en torsion', 'Seule la contrainte normale $\\sigma$ est non nulle', 'Le moment quadratique $I_z$ intervient'] },
+    flexion: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour une poutre en flexion simple ?',
+      T: ['La contrainte normale varie linéairement avec $y$', 'La contrainte normale est nulle sur la fibre neutre', 'La contrainte normale est maximale sur les fibres extrêmes', 'La contrainte tangentielle est négligeable devant la contrainte normale', 'Le module d\'Young $E$ et le moment quadratique $I_z$ interviennent'],
+      F: ['La contrainte normale est uniforme sur la section', 'La loi de Hooke fait intervenir le module de Coulomb $G$', 'La contrainte tangentielle domine la contrainte normale', 'Le moment quadratique polaire $I_0$ intervient dans $\\sigma(y)$'] },
+    traction: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour une barre en traction ?',
+      T: ['La contrainte normale est uniforme sur la section', 'La contrainte normale vaut $\\dfrac{N}{S}$', 'Le module d\'Young $E$ intervient', 'L\'allongement est proportionnel à la longueur initiale'],
+      F: ['Le module de Coulomb $G$ intervient', 'La contrainte dépend du moment quadratique polaire $I_0$', 'Les sections droites tournent les unes par rapport aux autres', 'L\'allongement est indépendant de l\'aire de la section'] },
+    quad: { fam: 'r_quad', text: 'Quelles affirmations sont exactes sur les moments quadratiques ?',
+      T: ['L\'unité usuelle est le $\\mathrm{mm^4}$', '$I_0=I_y+I_z$', '$I_z$ se calcule avec la distance $y$ à l\'axe $z$', 'Huygens fait intervenir l\'aire $S$ et le carré de la distance entre deux axes parallèles', 'Pour une section creuse, on retranche le moment quadratique de la partie évidée'],
+      F: ['L\'unité usuelle est le $\\mathrm{mm^2}$', '$I_0=I_y\\,I_z$', 'Huygens ne s\'applique qu\'entre deux axes perpendiculaires', 'Pour une section creuse, on additionne les moments quadratiques des sections extérieure et intérieure'] },
+  };
+  function multiPool(name) {
+    const P = POOLS[name];
+    const k = pick([2, 2, 3]);
+    const T = shuffle(P.T).slice(0, Math.min(k, P.T.length)), Fs = shuffle(P.F).slice(0, 5 - T.length);
+    return multiQ({ family: P.fam, kind: 'text', text: P.text,
+      steps: T.map((t) => 'Exacte : ' + t + '.').concat(Fs.map((t) => 'Fausse : ' + t + '.')),
+      items: T.map((c) => ({ c, ok: true })).concat(Fs.map((c) => ({ c, ok: false }))) });
+  }
+  const MULTI = {
+    r_hyp: () => multiPool('hyp'),
+    r_coh: () => (R.rand() < 0.55 ? multiCoh() : multiForm('r_coh')),
+    r_quad: () => (R.rand() < 0.5 ? multiForm('r_quad') : multiPool('quad')),
+    r_form: () => (R.rand() < 0.5 ? multiForm('r_form') : multiPool(pick(['torsion', 'flexion', 'traction']))),
+    r_ordre: multiUnits,
+  };
 
   const GEN = { qOrdre, qRg, qNumSigma, qNumAllong, qNumTorsionTau, qNumTorsionAngle, qNumFlexion, qQuadForm, qQuadNum, qHuygens, qCohSolicitation, qCohInverse };
   // Tirage : la banque rédigée et les générateurs sont mélangés par famille
@@ -1641,7 +1762,300 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     r_ordre: () => { const r = R.rand(); if (r < 0.35) return qOrdre(); if (r < 0.45) return qRg(); return fromBank(pick(BANK.filter((e) => e[0] === 'r_ordre'))); },
     r_num: () => pick([qNumSigma, qNumAllong, qNumTorsionTau, qNumTorsionAngle, qNumFlexion])(),
   };
-  const key = (q) => q.family + '|' + q.text + '|' + (q.math || '');
+  const key = (q) => q.family + '|' + q.text + '|' + (q.math || '') + (q.multi ? '|' + q.choices.join('~') : '');
+  function generateSet(families, n, opts) {
+    const fams = families && families.length ? families : Object.keys(FAMILIES);
+    const mode = (opts && opts.choice) || 'single';
+    const out = []; const seen = new Set(); let guard = 0, idx = 0;
+    while (out.length < n && guard++ < n * 80) {
+      const f = fams[idx % fams.length]; idx++;
+      const multi = MULTI[f] && (mode === 'multi' || (mode === 'mix' && R.rand() < 0.4));
+      const q = multi ? MULTI[f]() : FAMILIES[f]();
+      const k = key(q); if (seen.has(k)) continue; seen.add(k); out.push(q);
+    }
+    return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
+  }
+  const api = { BANK, FAM, FAMILIES, MULTI, generateSet, cohTex, GEN, fmtNum };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Rdm = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+// Dérivation vectorielle : dérivée dans une base d'un vecteur lié à une autre base (formule de Bour)
+// Trois bases b0, b1, b2 : b1 tourne de alpha / b0 (axe k1), b2 tourne de beta / b1 (axe k2).
+(function (root) {
+  'use strict';
+  const E = root.Engine || require('./engine.js');
+  const QM = root.Questions || require('./questions.js');
+  const { pick, shuffle, randint, R } = QM.util;
+  const COLORS = QM.COLORS;
+
+  const FAM = { d_form: 'Formules', d_omega: 'Vecteur rotation', d_graph: 'Méthode graphique', d_prod: 'Vecteur variable', d_bour: 'Formule de Bour' };
+  const CFG = [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]];
+  const cache = {};
+  const basesOf = (k1, k2) => cache[k1 + '' + k2] || (cache[k1 + '' + k2] = E.buildBases(k1, k2));
+
+  const ZERO = [{}, {}, {}];
+  const vn = (b, i) => E.vecName(b, i);
+  const bn = (b) => 'b_' + b;
+  const ddt = (v, m) => '\\left.\\dfrac{d\\,' + v + '}{dt}\\right|_{' + bn(m) + '}';
+  const ddtE = (ex, m) => '\\left.\\dfrac{d}{dt}\\left(' + ex + '\\right)\\right|_{' + bn(m) + '}';
+  const om = (j, m) => '\\overrightarrow{\\Omega_{' + j + '/' + m + '}}';
+  const M = (s) => '$$' + s + '$$';
+  const t = (s) => '$' + s + '$';
+  const DA = '\\dot{\\alpha}', DB = '\\dot{\\beta}';
+
+  // Vecteur rotation Omega(j/m) = a * alphapoint + b * betapoint (a, b : vecteurs en coordonnées b0)
+  function omegaParts(j, m, bs, k1, k2) {
+    const A1 = bs[0][k1], A2 = bs[1][k2];
+    const key = j + ',' + m;
+    switch (key) {
+      case '1,0': return { a: A1, b: ZERO };
+      case '0,1': return { a: E.vneg(A1), b: ZERO };
+      case '2,1': return { a: ZERO, b: A2 };
+      case '1,2': return { a: ZERO, b: E.vneg(A2) };
+      case '2,0': return { a: A1, b: A2 };
+      default: return { a: E.vneg(A1), b: E.vneg(A2) }; // 0,2
+    }
+  }
+  // Dérivée dans b_m d'un vecteur u lié à b_j : (a ^ u) alphapoint + (b ^ u) betapoint
+  function dparts(u, j, m, bs, k1, k2) {
+    const o = omegaParts(j, m, bs, k1, k2);
+    return { Va: E.cross(o.a, u), Vb: E.cross(o.b, u) };
+  }
+  const sig = (P) => E.sigVec(P.Va) + '#' + E.sigVec(P.Vb);
+  const isZ = (P) => E.isZeroVec(P.Va) && E.isZeroVec(P.Vb);
+  const cntTerms = (P, bs, ob) => E.nTerms(E.coords(P.Va, bs, ob)) + E.nTerms(E.coords(P.Vb, bs, ob));
+
+  // Expression LaTeX de Va alphapoint + Vb betapoint dans la base ob ; renvoie aussi la structure (pour les tests)
+  function dexTex(P, bs, ob) {
+    const out = []; const struct = [];
+    [[DA, 0, P.Va], [DB, 1, P.Vb]].forEach(([f, fi, V]) => {
+      E.coords(V, bs, ob).forEach((p, i) => {
+        const keys = Object.keys(p);
+        if (!keys.length) return;
+        keys.forEach((k) => struct.push({ f: fi, coef: p[k], e: k.split(',').map(Number), b: ob, i }));
+        if (keys.length === 1) {
+          const k = keys[0], c = p[k], mono = E.monoTex(k.split(',').map(Number));
+          const body = f + '\\,' + ((mono === '' && Math.abs(c) === 1) ? '' : (Math.abs(c) === 1 ? '' : Math.abs(c) + '\\,') + mono + (mono === '' ? '' : '\\,')) + vn(ob, i);
+          out.push([c < 0 ? '-' : '+', body]);
+        } else out.push(['+', f + '\\,\\left(' + E.polyTex(p) + '\\right)\\,' + vn(ob, i)]);
+      });
+    });
+    if (!out.length) return { tex: '\\overrightarrow{0}', struct };
+    let s = '';
+    out.forEach(([sg, b], idx) => { s += (idx === 0 ? (sg === '-' ? '-' : '') : ' ' + sg + ' ') + b; });
+    return { tex: s, struct };
+  }
+  function bestOut(P, bs, prefer) {
+    let best = prefer[0], bn_ = Infinity;
+    prefer.concat([0, 1, 2]).forEach((b) => { const n = cntTerms(P, bs, b); if (n < bn_) { bn_ = n; best = b; } });
+    return best;
+  }
+
+  // Pièges : variantes plausibles de (Va, Vb)
+  function variants(P, extra) {
+    const neg = (V) => E.vneg(V);
+    const c = [];
+    c.push({ Va: neg(P.Va), Vb: neg(P.Vb) });
+    if (!E.isZeroVec(P.Vb) && !E.isZeroVec(P.Va)) { c.push({ Va: P.Va, Vb: ZERO }); c.push({ Va: ZERO, Vb: P.Vb }); c.push({ Va: P.Va, Vb: neg(P.Vb) }); c.push({ Va: neg(P.Va), Vb: P.Vb }); c.push({ Va: P.Vb, Vb: P.Va }); }
+    else if (!E.isZeroVec(P.Va)) { c.push({ Va: ZERO, Vb: P.Va }); }
+    else if (!E.isZeroVec(P.Vb)) { c.push({ Va: P.Vb, Vb: ZERO }); }
+    c.push({ Va: ZERO, Vb: ZERO });
+    return c.concat(extra || []);
+  }
+  function pickDistractors(P, cands, bs, ob, maxTerms) {
+    const seen = new Set([sig(P)]); const out = [];
+    shuffle(cands).forEach((c) => {
+      const s = sig(c);
+      if (seen.has(s) || cntTerms(c, bs, ob) > maxTerms) return;
+      seen.add(s); out.push(c);
+    });
+    return out;
+  }
+  function assemble(correct, wrong, texOf) {
+    const all = shuffle([{ x: correct, ok: true }].concat(wrong.slice(0, 3).map((x) => ({ x, ok: false }))));
+    return { choices: all.map((o) => texOf(o.x)), correctIndex: all.findIndex((o) => o.ok) };
+  }
+  const mkFig = (k1, k2, j, i) => ({ k1, k2, highlights: [{ b: j, i, color: COLORS[0] }], names: ['vecteur à dériver'] });
+  const base = (o) => Object.assign({ theme: 'deriv', math: null, choiceKind: 'math' }, o);
+  const cfg = () => { const [k1, k2] = pick(CFG); return { k1, k2, bs: basesOf(k1, k2) }; };
+
+  // ---------- Méthode graphique : une seule rotation ----------
+  const SINGLE = [[1, 0], [0, 1], [2, 1], [1, 2]];
+  const rotInfo = (j, m, k1, k2) => (j + m === 1 ? { k: k1, g: '\\alpha', gd: DA } : { k: k2, g: '\\beta', gd: DB });
+  function qGraph() {
+    const { k1, k2, bs } = cfg();
+    const [j, m] = pick(SINGLE); const ri = rotInfo(j, m, k1, k2);
+    let i = randint(0, 2); if (i === ri.k && R.rand() < 0.75) i = (ri.k + 1 + randint(0, 1)) % 3;
+    const u = bs[j][i]; const P = dparts(u, j, m, bs, k1, k2);
+    const ob = j, D = dexTex(P, bs, ob);
+    const rev = (j === 0 && m === 1) || (j === 1 && m === 2);
+    const axisV = j + m === 1 ? bs[0][ri.k] : bs[1][ri.k];
+    const place = (V) => (ri.gd === DA ? { Va: V, Vb: ZERO } : { Va: ZERO, Vb: V });
+    const fam = variants(P, [place(u), place(axisV), place(E.vneg(axisV)), place(bs[j][(ri.k + 1) % 3]), place(bs[j][(ri.k + 2) % 3]), place(E.vneg(bs[j][(ri.k + 1) % 3])), place(E.vneg(bs[j][(ri.k + 2) % 3]))]);
+    const wrong = pickDistractors(P, fam, bs, ob, 2);
+    if (wrong.length < 3) return qGraph();
+    const A = assemble(P, wrong, (x) => dexTex(x, bs, ob).tex);
+    const steps = [];
+    if (j + m === 1) steps.push(rev ? 'La base ' + t(bn(j)) + ', qui contient le vecteur, tourne par rapport à ' + t(bn(m)) + ' autour de ' + t(vn(0, ri.k)) + ' : ' + t(om(j, m) + '=-' + ri.gd + '\\,' + vn(0, ri.k)) + ' (rotation d\'angle ' + t('-' + ri.g) + ').' : 'Le vecteur appartient à la base ' + t(bn(j)) + ', qui tourne par rapport à ' + t(bn(m)) + ' autour de ' + t(vn(0, ri.k)) + ' : ' + t(om(j, m) + '=' + ri.gd + '\\,' + vn(0, ri.k)) + '.');
+    else steps.push(rev ? 'La base ' + t(bn(j)) + ', qui contient le vecteur, tourne par rapport à ' + t(bn(m)) + ' autour de ' + t(vn(1, ri.k)) + ' : ' + t(om(j, m) + '=-' + ri.gd + '\\,' + vn(1, ri.k)) + ' (rotation d\'angle ' + t('-' + ri.g) + ').' : 'Le vecteur appartient à la base ' + t(bn(j)) + ', qui tourne par rapport à ' + t(bn(m)) + ' autour de ' + t(vn(1, ri.k)) + ' : ' + t(om(j, m) + '=' + ri.gd + '\\,' + vn(1, ri.k)) + '.');
+    const axisTx = j + m === 1 ? vn(0, ri.k) : vn(1, ri.k);
+    const omTex = (rev ? '-' : '') + ri.gd + '\\,' + axisTx;
+    if (i === ri.k) steps.push('Le vecteur est porté par l\'axe de rotation : il est fixe dans les deux bases, sa dérivée est nulle.');
+    else {
+      steps.push('Méthode graphique : le vecteur tourne dans le plan perpendiculaire à l\'axe. Sa dérivée s\'obtient en le tournant de ' + t('90^{\\circ}') + ' dans le sens positif de l\'angle orienté, puis en multipliant par la vitesse de rotation ' + t(rev ? '-' + ri.gd : ri.gd) + '.');
+    }
+    steps.push(M(ddt(vn(j, i), m) + '=' + om(j, m) + '\\wedge' + vn(j, i) + '=' + omTex + '\\wedge' + vn(j, i) + '=\\boxed{' + D.tex + '}'));
+    return base({ family: 'd_graph', famLabel: FAM.d_graph, figure: mkFig(k1, k2, j, i), text: 'Calculer la dérivée vectorielle suivante, par la méthode graphique.', math: ddt(vn(j, i), m), choices: A.choices, correctIndex: A.correctIndex, steps, meta: { k1, k2, j, m, i, P, ob, struct: D.struct } });
+  }
+
+  // ---------- Vecteur variable : lambda(t) fois un vecteur de base ----------
+  function qProd() {
+    const { k1, k2, bs } = cfg();
+    const [j, m] = pick(SINGLE); const ri = rotInfo(j, m, k1, k2);
+    const i = (ri.k + 1 + randint(0, 1)) % 3;
+    const u = bs[j][i]; const P = dparts(u, j, m, bs, k1, k2);
+    const part = ri.gd === DA ? P.Va : P.Vb;
+    const bv = E.asBaseVector(part, bs, [j]); // ± base vector
+    const rv = vn(bv.b, bv.i), sg = bv.k < 0 ? '-' : '+';
+    const second = (s) => '\\lambda\\,' + ri.gd + '\\,' + rv;
+    const lam = '\\dot{\\lambda}\\,' + vn(j, i);
+    const good = lam + ' ' + sg + ' ' + second();
+    const flip = lam + ' ' + (sg === '+' ? '-' : '+') + ' ' + second();
+    const cands = [flip, '\\lambda\\,' + ri.gd + '\\,' + rv + (sg === '-' ? '' : ''), lam, '\\dot{\\lambda}\\,' + ri.gd + '\\,' + rv, lam + ' ' + sg + ' ' + ri.gd + '\\,' + rv, lam + ' ' + sg + ' \\dot{\\lambda}\\,' + ri.gd + '\\,' + rv, lam + ' ' + sg + ' \\lambda\\,' + vn(j, i)];
+    cands[1] = (sg === '-' ? '-' : '') + second();
+    const seen = new Set([good]); const wrong = [];
+    shuffle(cands).forEach((c) => { if (!seen.has(c) && wrong.length < 3) { seen.add(c); wrong.push(c); } });
+    const all = shuffle([{ x: good, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
+    const steps = [
+      'Dérivée d\'un produit : ' + t(ddtE('\\lambda\\,' + vn(j, i), m) + '=\\dot{\\lambda}\\,' + vn(j, i) + '+\\lambda\\,' + ddt(vn(j, i), m)) + '.',
+      'Le vecteur ' + t(vn(j, i)) + ' appartient à la base ' + t(bn(j)) + ' qui tourne par rapport à ' + t(bn(m)) + ' : méthode graphique (rotation de ' + t('90^{\\circ}') + ' dans le sens de l\'angle orienté, multipliée par la vitesse de rotation).',
+      M(ddt(vn(j, i), m) + '=' + (sg === '-' ? '-' : '') + ri.gd + '\\,' + rv),
+      M('\\boxed{' + ddtE('\\lambda\\,' + vn(j, i), m) + '=' + good + '}'),
+    ];
+    return base({ family: 'd_prod', famLabel: FAM.d_prod, figure: mkFig(k1, k2, j, i), text: 'Calculer la dérivée vectorielle suivante, où ' + t('\\lambda') + ' est une fonction du temps.', math: ddtE('\\lambda\\,' + vn(j, i), m), choices: all.map((o) => o.x), correctIndex: all.findIndex((o) => o.ok), steps, meta: { k1, k2, j, m, i, P } });
+  }
+
+  // ---------- Formule de Bour : deux rotations ----------
+  function qBour() {
+    const { k1, k2, bs } = cfg();
+    const [j, m] = pick([[2, 0], [2, 0], [0, 2]]);
+    const i = randint(0, 2);
+    const u = bs[j][i]; const P = dparts(u, j, m, bs, k1, k2);
+    if (isZ(P)) return qBour();
+    const ob = bestOut(P, bs, [j, 1, m]);
+    if (cntTerms(P, bs, ob) > 3) return qBour();
+    const D = dexTex(P, bs, ob);
+    const extra = [];
+    // pièges propres : sens de rotation mal composé, une seule rotation prise en compte
+    const o1 = omegaParts(j, m, bs, k1, k2);
+    extra.push({ Va: E.cross(o1.a, u), Vb: E.vneg(E.cross(o1.b, u)) });
+    const wrong = pickDistractors(P, variants(P, extra), bs, ob, Math.max(3, cntTerms(P, bs, ob) + 1));
+    if (wrong.length < 3) return qBour();
+    const A = assemble(P, wrong, (x) => dexTex(x, bs, ob).tex);
+    // décomposition par la base intermédiaire b1
+    const T1 = dparts(u, j, 1, bs, k1, k2);          // dérivée dans b1
+    const o2 = omegaParts(1, m, bs, k1, k2);          // Omega(1/m)
+    const T2 = { Va: E.cross(o2.a, u), Vb: E.cross(o2.b, u) };
+    const omTxt = (jj, mm) => {
+      const o = omegaParts(jj, mm, bs, k1, k2), terms = [];
+      const pushT = (V, f, vecT) => { if (!E.isZeroVec(V)) terms.push([E.isZeroVec(E.vadd(V, bs[0][k1])) || E.isZeroVec(E.vadd(V, bs[1][k2])) ? '-' : '+', f + '\\,' + vecT]); };
+      pushT(o.a, DA, vn(0, k1)); pushT(o.b, DB, vn(1, k2));
+      let s = ''; terms.forEach(([sg, b], idx) => { s += (idx === 0 ? (sg === '-' ? '-' : '') : ' ' + sg + ' ') + b; });
+      return s;
+    };
+    const steps = [
+      'Formule de Bour, avec la base intermédiaire ' + t(bn(1)) + ' : ' + M(ddt('\\overrightarrow{u}', m) + '=' + ddt('\\overrightarrow{u}', 1) + '+' + om(1, m) + '\\wedge\\overrightarrow{u}'),
+      'Premier terme, le vecteur ' + t(vn(j, i)) + ' étant lié à ' + t(bn(j)) + ' (une seule rotation par rapport à ' + t(bn(1)) + ', méthode graphique) : ' + M(ddt(vn(j, i), 1) + '=' + om(j, 1) + '\\wedge' + vn(j, i) + '=(' + omTxt(j, 1) + ')\\wedge' + vn(j, i)) + M(ddt(vn(j, i), 1) + '=' + dexTex(T1, bs, ob).tex),
+    ];
+    const proj = [];
+    [[bs[0][k1], 0, k1], [bs[1][k2], 1, k2]].forEach(([ax, b0, kk]) => {
+      const bv = E.asBaseVector(ax, bs, [j]);
+      if (!bv || bv.b !== j) proj.push(t(vn(b0, kk) + '=' + E.coordsTex(E.coords(ax, bs, j), j)));
+    });
+    if (proj.length) steps.push('Projection dans la base ' + t(bn(j)) + ' du vecteur rotation qui n\'y est pas écrit : ' + proj.join(' ; ') + '.');
+    steps.push('Second terme : ' + M(om(1, m) + '\\wedge' + vn(j, i) + '=(' + omTxt(1, m) + ')\\wedge' + vn(j, i) + '=' + dexTex(T2, bs, ob).tex));
+    steps.push(M(ddt(vn(j, i), m) + '=\\boxed{' + D.tex + '}'));
+    return base({ family: 'd_bour', famLabel: FAM.d_bour, figure: mkFig(k1, k2, j, i), text: 'Calculer la dérivée vectorielle suivante, par la formule de Bour (deux rotations).', math: ddt(vn(j, i), m), choices: A.choices, correctIndex: A.correctIndex, steps, meta: { k1, k2, j, m, i, P, ob, struct: D.struct } });
+  }
+
+  // ---------- Vecteur rotation ----------
+  function qOmega() {
+    const { k1, k2, bs } = cfg();
+    const [j, m] = pick([[1, 0], [0, 1], [2, 1], [1, 2], [2, 0], [2, 0], [0, 2]]);
+    const o = omegaParts(j, m, bs, k1, k2);
+    const tx = (sa, sb, ka, kb) => {
+      const terms = [];
+      if (sa) terms.push([sa, DA + '\\,' + vn(0, ka)]);
+      if (sb) terms.push([sb, DB + '\\,' + vn(1, kb)]);
+      let s = ''; terms.forEach(([sg, b], idx) => { s += (idx === 0 ? (sg === '-' ? '-' : '') : ' ' + sg + ' ') + b; });
+      return s || '\\overrightarrow{0}';
+    };
+    const sa = E.isZeroVec(o.a) ? null : (E.isZeroVec(E.vadd(o.a, bs[0][k1])) ? '-' : '+');
+    const sb = E.isZeroVec(o.b) ? null : (E.isZeroVec(E.vadd(o.b, bs[1][k2])) ? '-' : '+');
+    const good = tx(sa, sb, k1, k2);
+    const flip = (s) => (s === '+' ? '-' : '+');
+    const k1b = (k1 + 1) % 3 === k2 ? (k1 + 2) % 3 : (k1 + 1) % 3, k2b = (k2 + 1) % 3 === k1 ? (k2 + 2) % 3 : (k2 + 1) % 3;
+    const c = [];
+    if (sa) c.push(tx(flip(sa), sb, k1, k2));
+    if (sb) c.push(tx(sa, flip(sb), k1, k2));
+    if (sa && sb) { c.push(tx(flip(sa), flip(sb), k1, k2)); c.push(tx(sa, null, k1, k2)); c.push(tx(null, sb, k1, k2)); c.push((sb === '-' ? '-' : '') + DA + '\\,' + vn(0, k1) + ' ' + (sa === '-' ? '-' : '+') + ' ' + DB + '\\,' + vn(1, k2)); }
+    // axe erroné : l'autre vecteur normal à l'axe
+    if (sa) c.push(tx(sa, sb, k1b, k2));
+    if (sb) c.push(tx(sa, sb, k1, k2b));
+    if (sa && !sb) { c.push('\\alpha\\,' + vn(0, k1)); c.push(DB + '\\,' + vn(0, k1)); c.push((sa === '-' ? '-' : '') + '\\ddot{\\alpha}\\,' + vn(0, k1)); }
+    if (sb && !sa) { c.push('\\beta\\,' + vn(1, k2)); c.push(DA + '\\,' + vn(1, k2)); c.push((sb === '-' ? '-' : '') + '\\ddot{\\beta}\\,' + vn(1, k2)); }
+    if (sa && sb) c.push(DB + '\\,' + vn(0, k1) + (sb === '-' ? ' - ' : ' + ') + DA + '\\,' + vn(1, k2));
+    const seen = new Set([good]); const wrong = [];
+    shuffle(c).forEach((x) => { if (!seen.has(x) && wrong.length < 3) { seen.add(x); wrong.push(x); } });
+    if (wrong.length < 3) return qOmega();
+    const all = shuffle([{ x: good, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
+    const steps = [];
+    steps.push('La base ' + t(bn(1)) + ' tourne par rapport à ' + t(bn(0)) + ' de l\'angle ' + t('\\alpha') + ' autour de ' + t(vn(0, k1)) + ' : ' + t(om(1, 0) + '=' + DA + '\\,' + vn(0, k1)) + '. La base ' + t(bn(2)) + ' tourne par rapport à ' + t(bn(1)) + ' de l\'angle ' + t('\\beta') + ' autour de ' + t(vn(1, k2)) + ' : ' + t(om(2, 1) + '=' + DB + '\\,' + vn(1, k2)) + '.');
+    if (j === 2 && m === 0) steps.push('Composition des vecteurs rotation : ' + M(om(2, 0) + '=' + om(2, 1) + '+' + om(1, 0) + '=' + DB + '\\,' + vn(1, k2) + '+' + DA + '\\,' + vn(0, k1)));
+    if (j === 0 && m === 2) steps.push('Inversion du sens : ' + t(om(0, 2) + '=-' + om(2, 0)) + ', avec ' + t(om(2, 0) + '=' + om(2, 1) + '+' + om(1, 0) + '=' + DB + '\\,' + vn(1, k2) + '+' + DA + '\\,' + vn(0, k1)) + '.');
+    if ((j === 0 && m === 1) || (j === 1 && m === 2)) steps.push('Inversion du sens : ' + t(om(j, m) + '=-' + om(m, j)) + '.');
+    steps.push(M('\\boxed{' + om(j, m) + '=' + good + '}'));
+    return base({ family: 'd_omega', famLabel: FAM.d_omega, figure: { k1, k2, highlights: [], names: [] }, text: 'Exprimer le vecteur rotation de la base ' + t(bn(j)) + ' par rapport à la base ' + t(bn(m)) + ' en fonction de ' + t(DA) + ' et ' + t(DB) + '.', math: om(j, m), choices: all.map((o) => o.x), correctIndex: all.findIndex((o) => o.ok), steps, meta: { k1, k2, j, m, good } });
+  }
+
+  // ---------- Formules ----------
+  const BANK = [
+    ['Formule de Bour : dérivée dans $b_0$ d\'un vecteur $\\overrightarrow{u}$ en passant par $b_1$.', ddt('\\overrightarrow{u}', 0) + '=' + ddt('\\overrightarrow{u}', 1) + '+' + om(1, 0) + '\\wedge\\overrightarrow{u}',
+      [ddt('\\overrightarrow{u}', 0) + '=' + ddt('\\overrightarrow{u}', 1) + '+' + om(0, 1) + '\\wedge\\overrightarrow{u}', ddt('\\overrightarrow{u}', 0) + '=' + ddt('\\overrightarrow{u}', 1) + '+\\overrightarrow{u}\\wedge' + om(1, 0), ddt('\\overrightarrow{u}', 0) + '=' + ddt('\\overrightarrow{u}', 1) + '+' + om(1, 0) + '\\cdot\\overrightarrow{u}', ddt('\\overrightarrow{u}', 0) + '=' + ddt('\\overrightarrow{u}', 1) + '-' + om(1, 0) + '\\wedge\\overrightarrow{u}'], 'math', ''],
+    ['Un vecteur ' + t('\\overrightarrow{u}') + ' est lié à la base ' + t('b_1') + ' (ses composantes dans ' + t('b_1') + ' sont constantes). Que vaut sa dérivée dans ' + t('b_0') + ' ?', ddt('\\overrightarrow{u}', 0) + '=' + om(1, 0) + '\\wedge\\overrightarrow{u}',
+      [ddt('\\overrightarrow{u}', 0) + '=\\overrightarrow{u}\\wedge' + om(1, 0), ddt('\\overrightarrow{u}', 0) + '=' + om(0, 1) + '\\wedge\\overrightarrow{u}', ddt('\\overrightarrow{u}', 0) + '=\\overrightarrow{0}', ddt('\\overrightarrow{u}', 0) + '=' + om(1, 0) + '\\cdot\\overrightarrow{u}'], 'math', 'Dans ' + t('b_1') + ', la dérivée est nulle : la formule de Bour se réduit au terme ' + t(om(1, 0) + '\\wedge\\overrightarrow{u}') + '.'],
+    ['Relation entre ' + t(om(0, 1)) + ' et ' + t(om(1, 0)) + ' :', om(0, 1) + '=-' + om(1, 0),
+      [om(0, 1) + '=' + om(1, 0), om(0, 1) + '=\\overrightarrow{0}', om(0, 1) + '=-' + om(1, 0) + '\\wedge' + om(1, 0), om(0, 1) + '=\\dfrac{d' + om(1, 0) + '}{dt}'], 'math', 'Si ' + t('b_1') + ' tourne de ' + t('\\alpha') + ' par rapport à ' + t('b_0') + ', alors ' + t('b_0') + ' tourne de ' + t('-\\alpha') + ' par rapport à ' + t('b_1') + '.'],
+    ['Composition des vecteurs rotation de trois bases :', om(2, 0) + '=' + om(2, 1) + '+' + om(1, 0),
+      [om(2, 0) + '=' + om(2, 1) + '-' + om(1, 0), om(2, 0) + '=' + om(1, 2) + '+' + om(1, 0), om(2, 0) + '=' + om(2, 1) + '\\wedge' + om(1, 0), om(2, 0) + '=' + om(0, 1) + '+' + om(1, 2)], 'math', 'Les vecteurs rotation s\'additionnent : ' + t(om(2, 0) + '=' + om(2, 1) + '+' + om(1, 0)) + '.'],
+    ['La base ' + t('b_1') + ' tourne autour de ' + t('\\overrightarrow{z}') + ' d\'un angle orienté ' + t('\\alpha(t)') + ' par rapport à ' + t('b_0') + '. Que vaut ' + t(om(1, 0)) + ' ?', om(1, 0) + '=\\dot{\\alpha}\\,\\overrightarrow{z}',
+      [om(1, 0) + '=\\alpha\\,\\overrightarrow{z}', om(1, 0) + '=-\\dot{\\alpha}\\,\\overrightarrow{z}', om(1, 0) + '=\\ddot{\\alpha}\\,\\overrightarrow{z}', om(1, 0) + '=\\dot{\\alpha}\\,\\overrightarrow{x}'], 'math', 'Le vecteur rotation est porté par l\'axe de rotation, de norme la vitesse de rotation ' + t('\\dot{\\alpha}') + ', orienté dans le sens de l\'angle orienté positif.'],
+    ['Dérivée du produit d\'une fonction scalaire ' + t('\\lambda(t)') + ' par un vecteur ' + t('\\overrightarrow{u}') + ' :', ddtE('\\lambda\\,\\overrightarrow{u}', 0) + '=\\dot{\\lambda}\\,\\overrightarrow{u}+\\lambda\\,' + ddt('\\overrightarrow{u}', 0),
+      [ddtE('\\lambda\\,\\overrightarrow{u}', 0) + '=\\dot{\\lambda}\\,' + ddt('\\overrightarrow{u}', 0), ddtE('\\lambda\\,\\overrightarrow{u}', 0) + '=\\lambda\\,' + ddt('\\overrightarrow{u}', 0), ddtE('\\lambda\\,\\overrightarrow{u}', 0) + '=\\dot{\\lambda}\\,\\overrightarrow{u}-\\lambda\\,' + ddt('\\overrightarrow{u}', 0)], 'math', ''],
+    ['Un vecteur unitaire ' + t('\\overrightarrow{u}') + ' dépend du temps. Que peut-on dire de sa dérivée ?', 'Elle est orthogonale à ' + t('\\overrightarrow{u}'),
+      ['Elle est colinéaire à ' + t('\\overrightarrow{u}'), 'Elle est toujours nulle', 'Elle est un vecteur unitaire'], 'text', 'La norme de ' + t('\\overrightarrow{u}') + ' est constante : ' + t('\\overrightarrow{u}\\cdot\\overrightarrow{u}=1') + ', donc en dérivant ' + t('\\overrightarrow{u}\\cdot\\dfrac{d\\overrightarrow{u}}{dt}=0') + '.'],
+    ['Dans quel cas la méthode graphique s\'applique-t-elle directement ?', 'Le vecteur est lié à une base qui tourne autour d\'un seul axe par rapport à la base de dérivation',
+      ['La base du vecteur tourne simultanément autour de deux axes différents par rapport à la base de dérivation', 'Le vecteur est lié à la base de dérivation elle-même', 'La vitesse de rotation est constante uniquement'], 'text', 'Sinon, appliquer la formule de Bour, en passant par une base intermédiaire.'],
+    ['Que vaut la dérivée dans ' + t('b_0') + ' d\'un vecteur porté par l\'axe de rotation de ' + t('b_1') + ' par rapport à ' + t('b_0') + ' ?', 'Le vecteur nul',
+      ['Un vecteur orthogonal à l\'axe', 'La vitesse de rotation multipliée par le vecteur', 'Un vecteur de norme ' + t('\\dot{\\alpha}')], 'text', 'Le vecteur est fixe dans les deux bases : ' + t(om(1, 0) + '\\wedge\\overrightarrow{u}=\\overrightarrow{0}') + ' car ' + t('\\overrightarrow{u}') + ' est colinéaire à ' + t(om(1, 0)) + '.'],
+    ['Rotation d\'axe ' + t('\\overrightarrow{z}') + ' et d\'angle orienté ' + t('\\alpha') + ' entre ' + t('b_0') + ' et ' + t('b_1') + '. Que vaut ' + t(ddt('\\overrightarrow{x_1}', 0)) + ' ?', '\\dot{\\alpha}\\,\\overrightarrow{y_1}',
+      ['-\\dot{\\alpha}\\,\\overrightarrow{y_1}', '\\dot{\\alpha}\\,\\overrightarrow{x_1}', '\\dot{\\alpha}\\,\\overrightarrow{z}', '-\\dot{\\alpha}\\,\\overrightarrow{x_1}'], 'math', 'Méthode graphique : ' + t('\\overrightarrow{x_1}') + ' tourné de ' + t('90^{\\circ}') + ' dans le sens positif donne ' + t('\\overrightarrow{y_1}') + '.'],
+    ['Rotation d\'axe ' + t('\\overrightarrow{z}') + ' et d\'angle orienté ' + t('\\alpha') + ' entre ' + t('b_0') + ' et ' + t('b_1') + '. Que vaut ' + t(ddt('\\overrightarrow{y_1}', 0)) + ' ?', '-\\dot{\\alpha}\\,\\overrightarrow{x_1}',
+      ['\\dot{\\alpha}\\,\\overrightarrow{x_1}', '-\\dot{\\alpha}\\,\\overrightarrow{y_1}', '\\dot{\\alpha}\\,\\overrightarrow{z}', '\\dot{\\alpha}\\,\\overrightarrow{y_1}'], 'math', 'Méthode graphique : ' + t('\\overrightarrow{y_1}') + ' tourné de ' + t('90^{\\circ}') + ' dans le sens positif donne ' + t('-\\overrightarrow{x_1}') + '.'],
+  ];
+  function qForm() {
+    const [text, good, wrong, kind, expl] = pick(BANK);
+    const ws = shuffle(wrong).slice(0, 3);
+    const all = shuffle([{ c: good, ok: true }].concat(ws.map((c) => ({ c, ok: false }))));
+    const steps = [kind === 'math' ? M('\\boxed{' + good + '}') : 'Réponse : ' + good + '.'];
+    if (expl) steps.push(expl);
+    return base({ family: 'd_form', famLabel: FAM.d_form, text, choiceKind: kind, choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps });
+  }
+
+  const FAMILIES = { d_form: qForm, d_omega: qOmega, d_graph: qGraph, d_prod: qProd, d_bour: qBour };
+  const key = (q) => q.family + '|' + q.text + '|' + (q.math || '') + '|' + q.choices.join('~') + '|' + JSON.stringify(q.figure && q.figure.highlights);
   function generateSet(families, n) {
     const fams = families && families.length ? families : Object.keys(FAMILIES);
     const out = []; const seen = new Set(); let guard = 0, idx = 0;
@@ -1651,9 +2065,9 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
-  const api = { BANK, FAM, FAMILIES, generateSet, cohTex, GEN, fmtNum };
+  const api = { FAM, FAMILIES, generateSet, omegaParts, dparts, dexTex, basesOf, BANK };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.Rdm = api;
+  else root.Deriv = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 ;
@@ -1732,7 +2146,36 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
         '<section class="card"><h2>Vocabulaire et valeurs usuelles</h2><ul><li>' + T('\\sigma') + ' : contrainte normale ; ' + T('\\tau') + ' : contrainte tangentielle</li><li>' + T('\\varepsilon_\\bullet') + ' : déformation selon ' + T('\\bullet') + ' (sans unité) ; ' + T('\\gamma_\\bullet') + ' : rotation relative autour de ' + T('\\bullet') + ' (' + T('\\mathrm{rad/m}') + ')</li><li>' + T('E') + ' : module d\'Young (GPa) ; ' + T('G') + ' : module de Coulomb (GPa), ' + T('G\\approx0{,}4E') + '</li><li>' + T('\\nu') + ' : coefficient de Poisson</li><li>' + T('R_e') + ' : limite élastique (MPa) ; ' + T('R_m') + ' : limite à la rupture (MPa) ; ' + T('R_g') + ' : résistance au glissement (MPa), ' + T('R_g\\approx0{,}7R_e') + '</li></ul>' +
         '<table class="rtab center"><tr><th></th><th>' + T('E') + ' (GPa)</th><th>' + T('G') + ' (GPa)</th><th>' + T('\\nu') + '</th><th>' + T('R_e') + ' (MPa)</th></tr><tr><th>Acier</th><td>210</td><td>80</td><td>0,3</td><td>450</td></tr><tr><th>Aluminium</th><td>70</td><td>26</td><td>0,3</td><td>250</td></tr></table></section>';
     }
-    return { calc, liaisons, rdm };
+
+    function deriv() {
+      const info = { k1: 2, k2: 1, highlights: [] };
+      const ov = (x) => '\\overrightarrow{' + x + '}';
+      const dd = (u, m) => '\\left.\\dfrac{d\\,' + ov(u) + '}{dt}\\right|_{b_' + m + '}';
+      return '<h1>Rappels : dérivation vectorielle</h1>' +
+        '<section class="card"><h2>Principe</h2><p>La dérivée d\'un vecteur dépend de la base dans laquelle on dérive. Un vecteur constant dans une base ' + T('b_j') + ' ne l\'est plus dans une base ' + T('b_m') + ' en rotation par rapport à ' + T('b_j') + '.</p>' +
+        '<p>Deux rotations successives : ' + T('b_1') + ' tourne de ' + T('\\alpha') + ' par rapport à ' + T('b_0') + ', puis ' + T('b_2') + ' tourne de ' + T('\\beta') + ' par rapport à ' + T('b_1') + '.</p>' +
+        F.figureHTML(info, rtext) + '</section>' +
+        '<section class="card"><h2>Vecteur rotation</h2>' +
+        D('\\overrightarrow{\\Omega_{1/0}}=\\dot{\\alpha}\\,\\overrightarrow{\\text{axe}}\\qquad \\overrightarrow{\\Omega_{2/1}}=\\dot{\\beta}\\,\\overrightarrow{\\text{axe}}') +
+        D(ov('\\Omega_{2/0}') + '=' + ov('\\Omega_{2/1}') + '+' + ov('\\Omega_{1/0}')) +
+        D(ov('\\Omega_{0/1}') + '=-' + ov('\\Omega_{1/0}')) +
+        '<p>Le sens positif du vecteur rotation est celui de l\'axe de rotation orienté de la figure de calcul.</p></section>' +
+        '<section class="card"><h2>Formule de Bour</h2>' +
+        D(dd('u', 'm') + '=' + dd('u', 'j') + '+' + ov('\\Omega_{j/m}') + '\\wedge' + ov('u')) +
+        '<p>Pour un vecteur ' + T(ov('u')) + ' constant dans la base ' + T('b_j') + ' :</p>' +
+        D(dd('u', 'm') + '=' + ov('\\Omega_{j/m}') + '\\wedge' + ov('u')) +
+        '<p><b>Méthode.</b> On écrit le vecteur ' + T(ov('u')) + ' dans la base où il est constant, on repère le vecteur rotation ' + T(ov('\\Omega_{j/m}')) + ' entre cette base et la base de dérivation, puis on calcule le produit vectoriel. Si plusieurs rotations s\'enchaînent, on décompose ' + T(ov('\\Omega_{j/m}')) + ' par composition.</p>' +
+        '<p>Pour une base de dérivation ' + T('b_0') + ' et un vecteur exprimé dans ' + T('b_2') + ', on passe par la base intermédiaire ' + T('b_1') + ' :</p>' +
+        D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/1}') + '\\wedge' + ov('u') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/0}') + '\\wedge' + ov('u')) + '</section>' +
+        '<section class="card"><h2>Méthode graphique</h2><p>Valable quand la base de dérivation et la base du vecteur sont reliées par <b>une seule rotation</b> autour d\'un axe commun, d\'angle ' + T('\\theta') + '. Chaque vecteur perpendiculaire à l\'axe tourne de ' + T('+\\dfrac{\\pi}{2}') + ' dans le sens positif, multiplié par ' + T('\\dot{\\theta}') + '. Pour l\'axe ' + T(ov('z')) + ' :</p>' +
+        D('\\dfrac{d\\,\\overrightarrow{x_1}}{dt}=\\dot{\\theta}\\,\\overrightarrow{y_1}\\qquad\\dfrac{d\\,\\overrightarrow{y_1}}{dt}=-\\dot{\\theta}\\,\\overrightarrow{x_1}') +
+        '<p>Permutation circulaire ' + T(ov('x') + '\\to' + ov('y') + '\\to' + ov('z') + '\\to' + ov('x')) + ' : le vecteur ' + T('k+1') + ' devient ' + T('\\dot{\\theta}') + ' fois le vecteur ' + T('k+2') + ', et le vecteur ' + T('k+2') + ' devient ' + T('-\\dot{\\theta}') + ' fois le vecteur ' + T('k+1') + ', l\'indice ' + T('k') + ' étant celui de l\'axe de rotation. Le vecteur porté par l\'axe a une dérivée nulle.</p>' +
+        '<p>Si le vecteur dépend de deux rotations non parallèles (axes différents), la méthode graphique ne suffit plus : on applique la formule de Bour.</p></section>' +
+        '<section class="card"><h2>Vecteur de norme variable</h2>' +
+        D('\\dfrac{d}{dt}\\left(\\lambda(t)\\,' + ov('u') + '\\right)=\\dot{\\lambda}\\,' + ov('u') + '+\\lambda\\,\\dfrac{d\\,' + ov('u') + '}{dt}') +
+        '<p>Exemple : ' + T('\\overrightarrow{OM}=\\lambda(t)\\,\\overrightarrow{x_1}') + ' donne ' + T('\\left.\\dfrac{d\\,\\overrightarrow{OM}}{dt}\\right|_{b_0}=\\dot{\\lambda}\\,\\overrightarrow{x_1}+\\lambda\\,\\dot{\\alpha}\\,\\overrightarrow{y_1}') + ' pour une rotation ' + T('\\alpha') + ' autour de ' + T('\\overrightarrow{z}') + '.</p></section>';
+    }
+    return { calc, deriv, liaisons, rdm };
   }
   root.RecapMaker = make;
 })(window);
@@ -1741,7 +2184,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
 // Application : choix du thème, réglages, questions, résultats, rappels
 (function () {
   'use strict';
-  const Q = window.Questions, F = window.Figures, L = window.Liaisons, RD = window.Rdm;
+  const Q = window.Questions, F = window.Figures, L = window.Liaisons, RD = window.Rdm, DV = window.Deriv;
   const IMG = window.LiaisonImages || {};
   const app = document.getElementById('app');
 
@@ -1783,26 +2226,34 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       fams: [['dot', 'Produit scalaire'], ['cross', 'Produit vectoriel'], ['mixed', 'Produit mixte']],
       gen: (fams, n, o) => Q.generateSet(fams, n, { coefs: o.coefs }),
       options: [['coefs', 'Vecteurs non unitaires (coefficients devant les vecteurs)']],
-      recap: Recaps.calc, ref: 'Fiche : Produits scalaires, vectoriels et mixtes.',
+      recap: Recaps.calc,
+    },
+    deriv: {
+      title: 'Dérivation vectorielle', color: 'var(--graphite)',
+      desc: 'Vecteur rotation, méthode graphique et formule de Bour pour dériver un vecteur dans une base.',
+      intro: 'Dérivation vectorielle : composer les vecteurs rotation, dériver un vecteur lié à une base par la méthode graphique (une seule rotation) ou par la formule de Bour (deux rotations).',
+      fams: Object.keys(DV.FAM).map((k) => [k, DV.FAM[k]]),
+      gen: (fams, n) => DV.generateSet(fams, n),
+      options: [], recap: Recaps.deriv,
     },
     liaisons: {
       title: 'Liaisons normalisées', color: 'var(--green)',
       desc: 'Schémas, mobilités, torseurs cinématique et d\'action mécanique des liaisons usuelles.',
       intro: 'Tableau des liaisons normalisées : reconnaître les schémas, retrouver les mobilités et écrire les torseurs cinématique et d\'action mécanique.',
       fams: [['l_sch', 'Schémas des liaisons'], ['l_mob', 'Mobilités'], ['l_cin', 'Torseur cinématique'], ['l_am', 'Torseur d\'action mécanique'], ['l_inv', 'Retrouver la liaison']],
-      gen: (fams, n) => L.generateSet(fams, n),
-      options: [], recap: Recaps.liaisons, ref: 'Fiche : Tableau des liaisons normalisées.',
+      gen: (fams, n, o) => L.generateSet(fams, n, o),
+      multi: true, options: [], recap: Recaps.liaisons,
     },
     rdm: {
       title: 'Résistance des matériaux', color: 'var(--orange)',
-      desc: 'Formulaire de RdM : torseur de cohésion, moments quadratiques, formules, ordres de grandeur.',
-      intro: 'Formulaire de résistance des matériaux à connaître : hypothèses, torseur de cohésion, moments quadratiques, formules du cours, ordres de grandeur et applications numériques.',
+      desc: 'Torseur de cohésion, moments quadratiques, formules, ordres de grandeur et applications numériques.',
+      intro: 'Résistance des matériaux : hypothèses, torseur de cohésion, moments quadratiques, formules, ordres de grandeur et applications numériques.',
       fams: Object.keys(RD.FAM).map((k) => [k, RD.FAM[k]]),
-      gen: (fams, n) => RD.generateSet(fams, n),
-      options: [], recap: Recaps.rdm, ref: 'Fiche : Résistance des matériaux.',
+      gen: (fams, n, o) => RD.generateSet(fams, n, o),
+      multi: true, options: [], recap: Recaps.rdm,
     },
   };
-  const ORDER = ['calc', 'liaisons', 'rdm'];
+  const ORDER = ['calc', 'deriv', 'liaisons', 'rdm'];
   const famLabel = {};
   ORDER.forEach((t) => THEMES[t].fams.forEach(([k, l]) => { famLabel[k] = l; }));
 
@@ -1811,7 +2262,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   ORDER.forEach((t) => {
     const s = settings.themes[t] || {};
     const valid = (s.fams || []).filter((k) => THEMES[t].fams.some((f) => f[0] === k));
-    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs };
+    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
   });
   const save = () => store.set('qcm-settings', settings);
   let cur = null;      // thème courant
@@ -1865,20 +2316,24 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       '<button data-mode="train" aria-pressed="' + (settings.mode === 'train') + '">Entraînement</button>' +
       '<button data-mode="test" aria-pressed="' + (settings.mode === 'test') + '">Contrôle</button></div>' +
       '<div class="hint">' + (settings.mode === 'train' ? 'Correction détaillée après chaque question.' : 'Correction détaillée à la fin de la série.') + '</div></div>' +
+      (T.multi ? '<div class="field"><span class="lab">Réponses</span><div class="seg" id="cseg">' +
+        [['single', 'Une seule'], ['multi', 'Plusieurs possibles'], ['mix', 'Mélange']].map(([k, l]) => '<button data-choicemode="' + k + '" aria-pressed="' + (S.choice === k) + '">' + l + '</button>').join('') + '</div>' +
+        '<div class="hint">' + ({ single: 'Une seule bonne réponse par question.', multi: 'Plusieurs bonnes réponses possibles : cocher toutes les propositions exactes. Les applications numériques restent à réponse unique.', mix: 'Un mélange de questions à réponse unique et à réponses multiples.' })[S.choice] + '</div></div>' : '') +
       T.options.map(([k, l]) => '<div class="field"><label class="switch"><input type="checkbox" data-opt="' + k + '" ' + (S[k] ? 'checked' : '') + '><span>' + esc(l) + '</span></label></div>').join('') +
       '<div class="btns"><button class="btn" data-act="start" ' + (S.fams.length ? '' : 'disabled') + '>Commencer</button>' +
-      '<button class="btn secondary" data-act="recap">Rappels de cours</button></div></section>' +
-      statsHTML(t) + '<p class="foot">' + esc(T.ref) + ' Lycée Jules Renard, PTSI-PT.</p>';
+      '<button class="btn secondary" data-act="recap">Rappels</button></div></section>' +
+      statsHTML(t) + '<p class="foot">Lycée Jules Renard, PTSI-PT.</p>';
     window.scrollTo(0, 0);
   }
 
   // ---------- Questions ----------
+  const isOk = (q, a) => (a === null || a === undefined ? false : q.multi ? a.length === q.correctSet.length && a.every((x) => q.correctSet.includes(x)) : a === q.correctIndex);
   function startSession(questions) {
-    session = { qs: questions, i: 0, answers: new Array(questions.length).fill(null), locked: false };
+    session = { qs: questions, i: 0, answers: new Array(questions.length).fill(null), sel: questions.map(() => []), locked: false };
     renderQuestion();
   }
   function legendHTML(q) {
-    const names = ['premier vecteur', 'deuxième vecteur', 'troisième vecteur'];
+    const names = q.figure.names || ['premier vecteur', 'deuxième vecteur', 'troisième vecteur'];
     const cols = Q.COLORS;
     return '<div class="legend">' + q.figure.highlights.map((h, i) => '<span><i style="background:' + cols[i] + '"></i>' + names[i] + '</span>').join('') + '</div>';
   }
@@ -1889,56 +2344,89 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     if (k === 'text') return rtext(c);
     return tex(c, false);
   }
-  function renderQuestion() {
+  function ansHTML(q, a) {
+    if (!q.multi) return '<div class="ans">' + choiceHTML(q, q.choices[a]) + '</div>';
+    return '<ul class="alist">' + a.map((i) => '<li>' + choiceHTML(q, q.choices[i]) + '</li>').join('') + '</ul>';
+  }
+  function renderQuestion(keep) {
     const q = session.qs[session.i];
     const n = session.qs.length;
     const ans = session.answers[session.i];
+    const sel = session.sel[session.i];
     const isTrain = settings.mode === 'train';
     const done = isTrain && ans !== null;
     const kind = kindOf(q);
     let h = '<div class="topbar"><span class="count">' + (session.i + 1) + ' / ' + n + '</span><div class="progress"><i style="width:' + Math.round((100 * (session.i + (done ? 1 : 0))) / n) + '%"></i></div><button class="linkbtn" data-act="quit">Quitter</button></div>';
-    h += '<section class="card"><span class="pill">' + esc(q.famLabel) + '</span>';
+    h += '<section class="card"><span class="pill">' + esc(q.famLabel) + '</span>' + (q.multi ? '<span class="pill multi">Plusieurs réponses possibles</span>' : '');
     if (q.figure) {
-      h += '<details class="figbox" open><summary>Figures de calcul</summary>' + F.figureHTML(q.figure, rtext) + legendHTML(q) +
+      h += '<details class="figbox" open><summary>Figures de calcul</summary>' + F.figureHTML(q.figure, rtext) + (q.figure.highlights.length ? legendHTML(q) : '') +
         '<div class="rule"><b>Règle fondamentale.</b> ' +
         rtext('Sur une figure de calcul, l\'angle est toujours orienté dans le sens positif (sens trigonométrique, indiqué par la flèche de l\'arc, de l\'axe de départ vers l\'axe d\'arrivée), et les axes forment une base directe : $\\overrightarrow{x}\\ \\overrightarrow{y}\\ \\overrightarrow{z}\\ \\overrightarrow{x}\\ \\overrightarrow{y}\\ \\dots$') + '</div></details>';
     }
     h += '<div class="stmt">' + rtext(q.text) + '</div>';
+    if (q.multi) h += '<div class="hint">Cocher toutes les propositions exactes. La question est réussie si la sélection est exacte.</div>';
     if (q.image) h += '<figure class="schema"><img src="' + IMG[q.image] + '" alt="Schéma de liaison à identifier"></figure>';
     if (q.math) h += '<div class="math-block qmath">' + tex(q.math, true) + '</div>';
-    h += '<div class="choices' + (kind === 'img' ? ' imgs' : '') + '" role="radiogroup" aria-label="Réponses">';
+    h += '<div class="choices' + (kind === 'img' ? ' imgs' : '') + '" role="' + (q.multi ? 'group' : 'radiogroup') + '" aria-label="Réponses">';
     q.choices.forEach((c, i) => {
-      let cls = 'choice';
+      let cls = 'choice' + (q.multi ? ' multi' : '');
+      let tag = 'ABCDEF'[i];
+      if (q.multi) {
+        const picked = (done ? ans : sel).includes(i), right = q.correctSet.includes(i);
+        if (done) { if (picked && right) { cls += ' ok'; tag = '✓'; } else if (picked) { cls += ' ko'; tag = '✗'; } else if (right) { cls += ' miss'; tag = '✓'; } }
+        else if (picked) { cls += ' sel'; tag = '✓'; }
+        h += '<button class="' + cls + '" role="checkbox" aria-checked="' + picked + '" data-choice="' + i + '" ' + (done ? 'disabled' : '') + '><span class="tag">' + tag + '</span><span class="body">' + choiceHTML(q, c) + '</span></button>';
+        return;
+      }
       if (done) { if (i === q.correctIndex) cls += ' ok'; else if (i === ans) cls += ' ko'; }
       else if (ans === i) cls += ' sel';
-      h += '<button class="' + cls + '" role="radio" aria-checked="' + (ans === i) + '" data-choice="' + i + '" ' + (done ? 'disabled' : '') + '><span class="tag">' + (done && i === q.correctIndex ? '✓' : done && i === ans ? '✗' : 'ABCDEF'[i]) + '</span><span class="body">' + choiceHTML(q, c) + '</span></button>';
+      h += '<button class="' + cls + '" role="radio" aria-checked="' + (ans === i) + '" data-choice="' + i + '" ' + (done ? 'disabled' : '') + '><span class="tag">' + (done && i === q.correctIndex ? '✓' : done && i === ans ? '✗' : tag) + '</span><span class="body">' + choiceHTML(q, c) + '</span></button>';
     });
     h += '</div>';
     if (done) h += feedbackHTML(q, ans);
     h += '</section>';
     const last = session.i === n - 1;
-    const canNext = ans !== null;
-    h += '<div class="stickybar"><div class="in"><button class="btn" data-act="next" ' + (canNext ? '' : 'disabled') + '>' + (last ? 'Terminer' : 'Question suivante') + '</button></div></div>';
+    const canNext = q.multi ? (ans !== null || sel.length > 0) : ans !== null;
+    const label = q.multi && ans === null && isTrain ? 'Valider' : (last ? 'Terminer' : 'Question suivante');
+    h += '<div class="stickybar"><div class="in"><button class="btn" data-act="next" ' + (canNext ? '' : 'disabled') + '>' + label + '</button></div></div>';
+    const y = window.scrollY;
     app.innerHTML = h;
-    window.scrollTo(0, 0);
+    window.scrollTo(0, keep ? y : 0);
   }
   function feedbackHTML(q, ans) {
-    const ok = ans === q.correctIndex;
+    const ok = isOk(q, ans);
     return '<div class="fb ' + (ok ? 'ok' : 'ko') + '"><h3>' + (ok ? 'Bonne réponse' : 'Réponse incorrecte') + '</h3>' +
-      q.steps.map(para).join('') + (q.ref ? '<div class="ref">' + esc(q.ref) + '</div>' : '') + '</div>';
+      q.steps.map(para).join('') + '</div>';
+  }
+  function scrollFb() {
+    if (settings.mode !== 'train') return;
+    const fb = document.querySelector('.fb');
+    if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function choose(i) {
     if (!session) return;
+    const q = session.qs[session.i];
+    if (q.multi) {
+      if (session.answers[session.i] !== null && settings.mode === 'train') return;
+      const sel = session.sel[session.i], at = sel.indexOf(i);
+      if (at >= 0) sel.splice(at, 1); else sel.push(i);
+      return renderQuestion(true);
+    }
     if (settings.mode === 'train' && session.answers[session.i] !== null) return;
     session.answers[session.i] = i;
     renderQuestion();
-    if (settings.mode === 'train') {
-      const fb = document.querySelector('.fb');
-      if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    scrollFb();
   }
   function next() {
-    if (session.answers[session.i] === null) return;
+    const q = session.qs[session.i], i = session.i;
+    if (q.multi) {
+      if (session.answers[i] === null) {
+        const sel = session.sel[i].slice().sort((x, y) => x - y);
+        if (!sel.length) return;
+        session.answers[i] = sel;
+        if (settings.mode === 'train') { renderQuestion(); scrollFb(); return; }
+      }
+    } else if (session.answers[i] === null) return;
     if (session.i < session.qs.length - 1) { session.i++; renderQuestion(); }
     else results();
   }
@@ -1946,14 +2434,14 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   // ---------- Résultats ----------
   function results() {
     const qs = session.qs, an = session.answers;
-    const ok = qs.filter((q, i) => an[i] === q.correctIndex).length;
+    const ok = qs.filter((q, i) => isOk(q, an[i])).length;
     const st = store.get('qcm-stats', {});
-    qs.forEach((q, i) => { const s = st[q.family] || { ok: 0, total: 0 }; s.total++; if (an[i] === q.correctIndex) s.ok++; st[q.family] = s; });
+    qs.forEach((q, i) => { const s = st[q.family] || { ok: 0, total: 0 }; s.total++; if (isOk(q, an[i])) s.ok++; st[q.family] = s; });
     store.set('qcm-stats', st);
     const by = {};
-    qs.forEach((q, i) => { const s = by[q.family] || { ok: 0, total: 0 }; s.total++; if (an[i] === q.correctIndex) s.ok++; by[q.family] = s; });
+    qs.forEach((q, i) => { const s = by[q.family] || { ok: 0, total: 0 }; s.total++; if (isOk(q, an[i])) s.ok++; by[q.family] = s; });
     const pct = Math.round((100 * ok) / qs.length);
-    const msg = pct === 100 ? 'Sans faute.' : pct >= 70 ? 'Bon résultat.' : pct >= 40 ? 'À consolider : la correction détaillée aide à repérer les erreurs.' : 'À reprendre avec les rappels de cours.';
+    const msg = pct === 100 ? 'Sans faute.' : pct >= 70 ? 'Bon résultat.' : pct >= 40 ? 'À consolider : la correction détaillée aide à repérer les erreurs.' : 'À reprendre avec les rappels.';
     let h = '<h1>Résultats</h1><section class="card"><div class="score"><div class="big">' + ok + ' / ' + qs.length + '</div><div class="sub">' + msg + '</div></div>';
     h += Object.keys(by).map((k) => {
       const s = by[k]; const p = Math.round((100 * s.ok) / s.total);
@@ -1961,19 +2449,20 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
     }).join('') + '</section>';
     h += '<h2>Correction détaillée</h2>';
     h += qs.map((q, i) => {
-      const good = an[i] === q.correctIndex;
+      const good = isOk(q, an[i]);
       const kind = kindOf(q);
       const line = q.math && kind !== 'img' ? tex(q.math, false) : rtext(q.text);
+      const goodSet = q.multi ? q.correctSet : q.correctIndex;
       return '<details class="rev" ' + (good ? '' : 'open') + '><summary><span class="mark ' + (good ? 'ok' : 'ko') + '">' + (good ? '✓' : '✗') + '</span><span class="qline">' + line + '</span></summary><div class="inner">' +
         (q.figure ? '<details class="figbox"><summary>Figures de calcul</summary>' + F.figureHTML(q.figure, rtext) + '</details>' : '') +
         '<p>' + rtext(q.text) + '</p>' +
         (q.image ? '<figure class="schema"><img src="' + IMG[q.image] + '" alt="Schéma de liaison"></figure>' : '') +
         (q.math ? '<div class="math-block">' + tex(q.math, true) + '</div>' : '') +
-        '<p><b>Réponse choisie :</b></p><div class="ans">' + choiceHTML(q, q.choices[an[i]]) + '</div>' +
-        (good ? '' : '<p><b>Bonne réponse :</b></p><div class="ans">' + choiceHTML(q, q.choices[q.correctIndex]) + '</div>') +
-        q.steps.map(para).join('') + (q.ref ? '<div class="hint">' + esc(q.ref) + '</div>' : '') + '</div></details>';
+        '<p><b>' + (q.multi ? 'Réponses choisies :' : 'Réponse choisie :') + '</b></p>' + ansHTML(q, an[i]) +
+        (good ? '' : '<p><b>' + (q.multi ? 'Bonnes réponses :' : 'Bonne réponse :') + '</b></p>' + ansHTML(q, goodSet)) +
+        q.steps.map(para).join('') + '</div></details>';
     }).join('');
-    const wrong = qs.filter((q, i) => an[i] !== q.correctIndex);
+    const wrong = qs.filter((q, i) => !isOk(q, an[i]));
     h += '<div class="btns">' + (wrong.length ? '<button class="btn" data-act="retry">Rejouer les ' + wrong.length + ' question' + (wrong.length > 1 ? 's' : '') + ' manquée' + (wrong.length > 1 ? 's' : '') + '</button>' : '') +
       '<button class="btn ' + (wrong.length ? 'secondary' : '') + '" data-act="again">Nouvelle série</button><button class="btn secondary" data-act="theme-home">Réglages du thème</button><button class="btn secondary" data-act="home">Changer de thème</button></div>';
     app.innerHTML = h;
@@ -1999,7 +2488,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   // ---------- Événements ----------
   function newSet(n) { const S = settings.themes[cur]; return THEMES[cur].gen(S.fams, n, S); }
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-act],[data-theme],[data-fam],[data-n],[data-mode],[data-choice]');
+    const t = e.target.closest('[data-act],[data-theme],[data-fam],[data-n],[data-mode],[data-choice],[data-choicemode]');
     if (!t) return;
     if (t.dataset.theme) return setup(t.dataset.theme);
     if (t.dataset.fam) {
@@ -2008,6 +2497,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       save(); return setup(cur);
     }
     if (t.dataset.n) { settings.n = Number(t.dataset.n); save(); return setup(cur); }
+    if (t.dataset.choicemode) { settings.themes[cur].choice = t.dataset.choicemode; save(); return setup(cur); }
     if (t.dataset.mode) { settings.mode = t.dataset.mode; save(); return setup(cur); }
     if (t.dataset.choice !== undefined) return choose(Number(t.dataset.choice));
     switch (t.dataset.act) {
@@ -2017,7 +2507,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       case 'theme-home': return setup(cur);
       case 'home': return home();
       case 'retry': {
-        const wrong = session.qs.filter((q, i) => session.answers[i] !== q.correctIndex).map((q) => Object.assign({}, q));
+        const wrong = session.qs.filter((q, i) => !isOk(q, session.answers[i])).map((q) => Object.assign({}, q));
         return startSession(wrong);
       }
       case 'recap': return recap();

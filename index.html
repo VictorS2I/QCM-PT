@@ -1882,7 +1882,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   const cfg = () => { const [k1, k2] = pick(CFG); return { k1, k2, bs: basesOf(k1, k2) }; };
 
   // ---------- Méthode graphique : une seule rotation ----------
-  const SINGLE = [[1, 0], [0, 1], [2, 1], [1, 2]];
+  const SINGLE = [[1, 0]]; // dérivation toujours dans la base de départ b0
   const rotInfo = (j, m, k1, k2) => (j + m === 1 ? { k: k1, g: '\\alpha', gd: DA } : { k: k2, g: '\\beta', gd: DB });
   function qGraph() {
     const { k1, k2, bs } = cfg();
@@ -1940,7 +1940,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
   // ---------- Formule de Bour : deux rotations ----------
   function qBour() {
     const { k1, k2, bs } = cfg();
-    const [j, m] = pick([[2, 0], [2, 0], [0, 2]]);
+    const [j, m] = pick([[2, 0]]);
     const i = randint(0, 2);
     const u = bs[j][i]; const P = dparts(u, j, m, bs, k1, k2);
     if (isZ(P)) return qBour();
@@ -2152,7 +2152,7 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
       const ov = (x) => '\\overrightarrow{' + x + '}';
       const dd = (u, m) => '\\left.\\dfrac{d\\,' + ov(u) + '}{dt}\\right|_{b_' + m + '}';
       return '<h1>Rappels : dérivation vectorielle</h1>' +
-        '<section class="card"><h2>Principe</h2><p>La dérivée d\'un vecteur dépend de la base dans laquelle on dérive. Un vecteur constant dans une base ' + T('b_j') + ' ne l\'est plus dans une base ' + T('b_m') + ' en rotation par rapport à ' + T('b_j') + '.</p>' +
+        '<section class="card"><h2>Principe</h2><p>La dérivée d\'un vecteur dépend de la base dans laquelle on dérive. Ici, on dérive toujours dans la base ' + T('b_0') + '. Un vecteur constant dans une base ' + T('b_1') + ' ne l\'est plus dans ' + T('b_0') + ' si ' + T('b_1') + ' tourne par rapport à ' + T('b_0') + '.</p>' +
         '<p>Deux rotations successives : ' + T('b_1') + ' tourne de ' + T('\\alpha') + ' par rapport à ' + T('b_0') + ', puis ' + T('b_2') + ' tourne de ' + T('\\beta') + ' par rapport à ' + T('b_1') + '.</p>' +
         F.figureHTML(info, rtext) + '</section>' +
         '<section class="card"><h2>Vecteur rotation</h2>' +
@@ -2161,10 +2161,10 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
         D(ov('\\Omega_{0/1}') + '=-' + ov('\\Omega_{1/0}')) +
         '<p>Le sens positif du vecteur rotation est celui de l\'axe de rotation orienté de la figure de calcul.</p></section>' +
         '<section class="card"><h2>Formule de Bour</h2>' +
-        D(dd('u', 'm') + '=' + dd('u', 'j') + '+' + ov('\\Omega_{j/m}') + '\\wedge' + ov('u')) +
-        '<p>Pour un vecteur ' + T(ov('u')) + ' constant dans la base ' + T('b_j') + ' :</p>' +
-        D(dd('u', 'm') + '=' + ov('\\Omega_{j/m}') + '\\wedge' + ov('u')) +
-        '<p><b>Méthode.</b> On écrit le vecteur ' + T(ov('u')) + ' dans la base où il est constant, on repère le vecteur rotation ' + T(ov('\\Omega_{j/m}')) + ' entre cette base et la base de dérivation, puis on calcule le produit vectoriel. Si plusieurs rotations s\'enchaînent, on décompose ' + T(ov('\\Omega_{j/m}')) + ' par composition.</p>' +
+        D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) +
+        '<p>Pour un vecteur ' + T(ov('u')) + ' constant dans la base ' + T('b_1') + ' :</p>' +
+        D(dd('u', '0') + '=' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) +
+        '<p><b>Méthode.</b> On écrit le vecteur ' + T(ov('u')) + ' dans la base où il est constant, on repère le vecteur rotation de cette base par rapport à ' + T('b_0') + ', puis on calcule le produit vectoriel. Si plusieurs rotations s\'enchaînent, on décompose ce vecteur rotation par composition.</p>' +
         '<p>Pour une base de dérivation ' + T('b_0') + ' et un vecteur exprimé dans ' + T('b_2') + ', on passe par la base intermédiaire ' + T('b_1') + ' :</p>' +
         D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/1}') + '\\wedge' + ov('u') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/0}') + '\\wedge' + ov('u')) + '</section>' +
         '<section class="card"><h2>Méthode graphique</h2><p>Valable quand la base de dérivation et la base du vecteur sont reliées par <b>une seule rotation</b> autour d\'un axe commun, d\'angle ' + T('\\theta') + '. Chaque vecteur perpendiculaire à l\'axe tourne de ' + T('+\\dfrac{\\pi}{2}') + ' dans le sens positif, multiplié par ' + T('\\dot{\\theta}') + '. Pour l\'axe ' + T(ov('z')) + ' :</p>' +

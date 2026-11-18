@@ -1,0 +1,25 @@
+{
+  "name": "QCM de S2I, lycée Jules Renard",
+  "short_name": "QCM S2I",
+  "description": "QCM de sciences industrielles de l'ingénieur : figures de calcul, liaisons normalisées, résistance des matériaux",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a7d1a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

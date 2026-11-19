@@ -2763,16 +2763,18 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   }
 
   function draw(s) {
-    const y0 = 52; const hasFb = s.fb.length > 0; const yfb = y0 + (hasFb ? 74 : 56);
+    const y0 = s.dist ? 76 : 52; const hasFb = s.fb.length > 0; const yfb = y0 + (hasFb ? 74 : 56);
     let x = 8; let h = '';
     const L = (label) => { const r = rich(label); return r; };
     // entrée
-    const eW = 34; h += text(x, y0 - 10, '<tspan font-style="italic">E</tspan>(<tspan font-style="italic">p</tspan>)', 'start');
+    const eW = s.dist ? 42 : 34;
+    h += text(x, y0 - 10, s.dist ? '<tspan font-style="italic">E</tspan><tspan dy="4" font-size="10.5">1</tspan><tspan dy="-4">(</tspan><tspan font-style="italic">p</tspan>)' : '<tspan font-style="italic">E</tspan>(<tspan font-style="italic">p</tspan>)', 'start');
     let prev = x + eW - 4;
     const seg = []; // éléments rangés dans l'ordre
     s.pre.forEach((b) => seg.push({ t: 'b', b }));
     seg.push({ t: 'c' });
-    s.direct.forEach((b) => seg.push({ t: 'b', b }));
+    s.direct.forEach((b, i) => { if (s.dist && i === s.dist.at) seg.push({ t: 'd' }); seg.push({ t: 'b', b }); });
+    if (s.dist && s.dist.at >= s.direct.length) seg.push({ t: 'd' });
     s.post.forEach((b) => seg.push({ t: 'b', b, post: true }));
     let xc = 0, xtap = 0; let lastDirectEnd = 0; const sensors = [];
     let k = 0; const nDirect = s.direct.length; let directSeen = 0;
@@ -2785,6 +2787,15 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         h += '<line x1="' + f1(cx - d) + '" y1="' + f1(y0 - d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 + d) + '" stroke="' + FG + '" stroke-width="1.3"/><line x1="' + f1(cx - d) + '" y1="' + f1(y0 + d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 - d) + '" stroke="' + FG + '" stroke-width="1.3"/>';
         h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 + 14) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="16" font-weight="bold" text-anchor="middle">' + (s.pos ? '+' : '−') + '</text>';
         xc = cx; prev = cx + R; return;
+      }
+      if (e.t === 'd') {
+        const R = 18; const cx = prev + gap + R; h += arrow(prev, y0, cx - R, y0);
+        const d = R * Math.SQRT1_2;
+        h += '<circle cx="' + f1(cx) + '" cy="' + y0 + '" r="' + R + '" fill="var(--fig-bg)" stroke="' + FG + '" stroke-width="1.6"/>';
+        h += '<line x1="' + f1(cx - d) + '" y1="' + f1(y0 - d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 + d) + '" stroke="' + FG + '" stroke-width="1.3"/><line x1="' + f1(cx - d) + '" y1="' + f1(y0 + d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 - d) + '" stroke="' + FG + '" stroke-width="1.3"/>';
+        h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 - 5.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text>';
+        h += arrow(cx, y0 - 46, cx, y0 - R) + text(cx + 7, y0 - 32, '<tspan font-style="italic">E</tspan><tspan dy="4" font-size="10.5">2</tspan><tspan dy="-4">(</tspan><tspan font-style="italic">p</tspan>)', 'start');
+        prev = cx + R; return;
       }
       const bw = blockW(e.b); let bx = prev + gap;
       if (e.post && directSeen === nDirect && !xtap) { bx = prev + G + 14; }  // place pour la prise de sortie
@@ -3044,11 +3055,12 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const classOf = (rf) => PM.low(rf.D);
 
   const rnd = () => R.rand();
+  let PR = false; // option : poursuite et régulation (schémas avec perturbation)
   let POS = false; // option : retour positif possible (signe + sur le retour du comparateur)
   function wpick(pairs) { let t = 0; pairs.forEach((p) => { t += p[1]; }); let x = rnd() * t; for (const p of pairs) { x -= p[1]; if (x < 0) return p[0]; } return pairs[0][0]; }
 
   // construction aléatoire d'un schéma (descripteurs puis instanciation dans l'ordre de lecture)
-  function randomScheme(lit, forcePos) {
+  function randomScheme(lit, forcePos, pr) {
     const dirKinds = wpick([
       [['gain'], 1], [['t1'], 3], [['t2'], lit ? 0 : 2], [['int'], 1], [['gain', 'int'], 1], [['t1', 'int'], 3], [['gain', 't1'], 2], [['t1', 't1'], 2], [['t1', 'gain'], 1], [['int', 't1'], 1], [['gain', 't1', 'int'], 1], [['t2', 'int'], lit ? 0 : 1],
     ]);
@@ -3066,6 +3078,15 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       const a1 = Fr.dec(xi).mul(new Fr(2)).div(new Fr(w0)), a2 = F1.div(new Fr(w0 * w0));
       return t2B(K(), a1, a2, xi, w0);
     };
+    if (pr) {
+      // poursuite et régulation : A (avant le sommateur de perturbation), B (après), retour C
+      const aK = wpick([[['gain'], 3], [['t1'], 3], [['gain', 't1'], 1]]);
+      const bK = wpick([[['t1'], 4], [['int'], 2], [['t1', 'int'], 2], [['gain', 't1'], 2], [['gain'], 1], [['t2'], lit ? 0 : 1], [['gain', 'int'], 1]]);
+      const cK = wpick([[null, 1], ['gain', 5], ['t1', 1.2]]);
+      const A = aK.map(mk), B = bK.map(mk);
+      const fbC = cK ? [cK === 'gain' ? gainB(lit ? 'K_{c}' : pick(['0.1', '0.2', '0.5', '2', '0.25', '0.4'])) : t1B(lit ? 'K_{c}' : pick(['0.5', '1', '2']), lit ? '\\tau_{c}' : pick(['0.1', '0.2', '0.5']))] : [];
+      return { pre: [], direct: A.concat(B), fb: fbC, post: [], lit: !!lit, pos: !!forcePos, dist: { at: A.length } };
+    }
     const preB = pre ? [mk(pre)] : []; const direct = dirKinds.map(mk); const postB = post ? [mk(post)] : [];
     const fb = fbKind ? [fbKind === 'gain' ? gainB(lit ? 'K_{c}' : pick(['0.1', '0.2', '0.5', '2', '0.25', '0.4'])) : t1B(lit ? 'K_{c}' : pick(['0.5', '1', '2']), lit ? '\\tau_{c}' : pick(['0.1', '0.2', '0.5']))] : [];
     return { pre: preB, direct, fb, post: postB, lit: !!lit, pos: !!forcePos };
@@ -3110,6 +3131,26 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       return Object.assign({ s }, a);
     }
     throw new Error('aucun schéma valide');
+  }
+
+  // poursuite (E2 = 0) : boucle de chaîne directe A·B ; régulation (E1 = 0) : chaîne directe B et retour A·C
+  function splitPR(s) {
+    const k = s.dist.at, dA = s.direct.slice(0, k), dB = s.direct.slice(k);
+    return {
+      dA, dB,
+      sP: { pre: [], direct: s.direct, fb: s.fb, post: [], lit: s.lit, pos: s.pos },
+      sR: { pre: [], direct: dB, fb: dA.concat(s.fb), post: [], lit: s.lit, pos: s.pos },
+    };
+  }
+  function makeSchemePR(lit) {
+    const wantPos = POS && rnd() < 0.4;
+    for (let k = 0; k < 8000; k++) {
+      const s = randomScheme(lit, wantPos && k < 5000, true); const sp = splitPR(s);
+      const eP = checkScheme(sp.sP); if (!eP) continue;
+      const eR = checkScheme(sp.sR); if (!eR) continue;
+      return Object.assign({ s, eP, eR }, sp);
+    }
+    throw new Error('aucun schéma de poursuite et régulation valide');
   }
 
   // ======================= Écriture des chaînes de blocs =======================
@@ -3220,6 +3261,28 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     steps.push(id[0] + (id.length > 1 ? '\n' + id.slice(1).join('\n') : ''));
     return steps;
   }
+  // correction d'une question de poursuite et régulation : superposition, puis boucle simple pour chaque cas
+  function explainPR(P, which) {
+    const s = P.s, sg = s.pos ? '-' : '+', hasC = s.fb.length > 0;
+    const At = chainTeX(P.dA), Bt = chainTeX(P.dB), Ct = hasC ? chainTeX(s.fb) : '1';
+    const ren = (st, name) => st.replace(/H_\{BF\}\(p\)/g, name).replace(/(^|[^A-Za-z_}\\])H\(p\)/g, '$1' + name);
+    const steps = [];
+    steps.push('**Repérer les blocs.** Le schéma a deux entrées : la consigne $E_1(p)$, qui arrive au comparateur, et la perturbation $E_2(p)$, injectée par le second sommateur. Bloc avant le sommateur de perturbation : $A(p)=' + At + '$. Bloc après ce sommateur : $B(p)=' + Bt + '$. Chaîne de retour : $C(p)=' + Ct + '$' + (hasC ? '' : ' (retour unitaire)') + '. Boucle ouverte : $FTBO(p)=A(p)\\,B(p)\\,C(p)$, avec ' + (s.pos ? 'un retour positif (signe plus sur le retour du comparateur).' : 'un retour négatif (signe moins sur le retour du comparateur).'));
+    steps.push('**Principe de superposition.** Le système est linéaire : l\'effet des deux entrées s\'ajoute. $$\\begin{aligned}S(p)&=H_{pours}(p)\\,E_1(p)\\\\&\\quad+H_{reg}(p)\\,E_2(p)\\end{aligned}$$ Poursuite : perturbation nulle, $E_2(p)=0$. Régulation : consigne nulle, $E_1(p)=0$. Les deux fonctions de transfert ont le même dénominateur $1' + sg + 'FTBO(p)$.');
+    if (which !== 'r') {
+      const E = P.eP;
+      const st = explain(P.sP, E).slice(1, -1);
+      steps.push('**Poursuite** ($E_2(p)=0$). La perturbation est nulle : le second sommateur est une simple liaison et le schéma se réduit à une boucle de chaîne directe $G(p)=A(p)\\,B(p)=' + chainTeX(s.direct) + '$ et de retour $C(p)=' + Ct + '$.');
+      st.forEach((x) => steps.push(ren(x, 'H_{pours}(p)')));
+    }
+    if (which !== 'p') {
+      const E = P.eR;
+      const st = explain(P.sR, E).slice(1, -1);
+      steps.push('**Régulation** ($E_1(p)=0$). Le comparateur ne reçoit plus que le retour : $\\varepsilon(p)=' + (s.pos ? '' : '-') + 'C(p)\\,S(p)$. Équations des blocs :\n$$S(p)=B(p)\\left(E_2(p)+A(p)\\,\\varepsilon(p)\\right)$$\n$$S(p)\\left(1' + sg + 'FTBO(p)\\right)=B(p)\\,E_2(p)$$\nVue depuis $E_2$, la chaîne directe est $B(p)$ et le signal revient au sommateur de perturbation en passant par $C(p)$ puis par $A(p)$ : chaîne de retour $H_r(p)=A(p)\\,C(p)=' + chainTeX(P.dA.concat(s.fb)) + '$.');
+      st.forEach((x) => steps.push(ren(x, 'H_{reg}(p)')));
+    }
+    return steps;
+  }
   // ω0 et ξ d'un dénominateur 1 + a1 p + a2 p², formules exactes
   function omegaXi(c) {
     const lit = !(mpIsConst(c.a[1].num) && mpIsConst(c.a[2].num) && mpEq(c.a[1].den, mpOne) && mpEq(c.a[2].den, mpOne));
@@ -3238,7 +3301,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
 
   // ======================= Questions =======================
   const BF = root.BlockFigs || (typeof require === 'function' ? require('./blockfigs.js') : null);
-  const specOf = (s) => ({ lit: s.lit, pos: !!s.pos, pre: s.pre.map((b) => b.spec), direct: s.direct.map((b) => b.spec), fb: s.fb.map((b) => b.spec), post: s.post.map((b) => b.spec) });
+  const specOf = (s) => ({ lit: s.lit, pos: !!s.pos, dist: s.dist ? s.dist.at : null, pre: s.pre.map((b) => b.spec), direct: s.direct.map((b) => b.spec), fb: s.fb.map((b) => b.spec), post: s.post.map((b) => b.spec) });
   const SAMP = [0.37, 1.3, 2.9];
   const rndAssign = (vars) => { const as = {}; vars.forEach((v) => { as[v] = 0.5 + rnd() * 3; }); return as; };
   function allVars(cs) { const set = new Set(); cs.forEach((c) => [c.K].concat(c.a, c.b).forEach((r) => { mpVars(r.num).forEach((v) => set.add(v)); mpVars(r.den).forEach((v) => set.add(v)); })); return Array.from(set); }
@@ -3269,8 +3332,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     }
     return cands;
   }
-  function pickWrong(s, E) {
-    const c = E.c; const cands = shuffle(wrongCanons(s, E));
+  function pickWrong(s, E, extra) {
+    const c = E.c; const cands = shuffle(wrongCanons(s, E).concat(extra || []));
     const as = s.lit ? rndAssign(allVars([c].concat(cands))) : {};
     const chosen = []; const seen = new Set([canonTeX(c)]);
     for (const cd of cands) {
@@ -3292,6 +3355,39 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       });
     }
     throw new Error('qCanon');
+  }
+
+  function qPR(lit) {
+    for (let k = 0; k < 400; k++) {
+      const P = makeSchemePR(lit); const s = P.s; const cp = P.eP.c, cr = P.eR.c;
+      let noA = [];
+      try { const cc = canon(evalScheme({ pre: [], direct: P.dB, fb: s.fb, post: [], lit: s.lit, pos: s.pos }).T); if (cc.beta === 0) noA = [cc]; } catch (e) { /* ignoré */ }
+      const variant = wpick([['p', 3], ['r', 3], ['both', 3]]);
+      const ENT = 'Le système représenté ci-dessous est soumis à une consigne $E_1(p)$ et à une perturbation $E_2(p)$. ';
+      const FIN = ' sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.');
+      let text, choices, correctIndex;
+      if (variant === 'both') {
+        const wp = pickWrong(P.sP, P.eP, [cr]), wr = pickWrong(P.sR, P.eR, [cp].concat(noA)); if (!wp || !wr) continue;
+        const pair = (a, b) => ({ a, b, tex: '\\begin{array}{l}H_{pours}(p)=' + canonTeX(a) + '\\\\[6pt] H_{reg}(p)=' + canonTeX(b) + '\\end{array}' });
+        const truth = pair(cp, cr); const as = lit ? rndAssign(allVars([cp, cr].concat(wp.map((w) => w.c), wr.map((w) => w.c)))) : {};
+        const cands = [pair(cr, cp), pair(cp, wr[0].c), pair(wp[0].c, cr), pair(wp[1].c, wr[1].c), pair(wp[2].c, cr), pair(cp, wr[2].c)];
+        const chosen = []; const seen = new Set([truth.tex]);
+        for (const cd of shuffle(cands)) { if (seen.has(cd.tex) || (sameVal(cd.a, cp, as) && sameVal(cd.b, cr, as))) continue; seen.add(cd.tex); chosen.push(cd); if (chosen.length === 3) break; }
+        if (chosen.length < 3) continue;
+        const all = shuffle([{ x: truth, ok: true }].concat(chosen.map((x) => ({ x, ok: false }))));
+        text = ENT + 'Par le principe de superposition, $S(p)=H_{pours}(p)\\,E_1(p)+H_{reg}(p)\\,E_2(p)$. Déterminer les deux fonctions de transfert $H_{pours}(p)$ et $H_{reg}(p)$,' + FIN;
+        choices = all.map((y) => y.x.tex); correctIndex = all.findIndex((y) => y.ok);
+      } else {
+        const isP = variant === 'p'; const wr = isP ? pickWrong(P.sP, P.eP, [cr]) : pickWrong(P.sR, P.eR, [cp].concat(noA)); if (!wr) continue;
+        const all = shuffle([{ tex: canonTeX(isP ? cp : cr), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
+        text = ENT + (isP ? 'Déterminer la fonction de transfert de poursuite $H_{pours}(p)=\\dfrac{S(p)}{E_1(p)}$, obtenue pour $E_2(p)=0$, puis la mettre' : 'Déterminer la fonction de transfert de régulation $H_{reg}(p)=\\dfrac{S(p)}{E_2(p)}$, obtenue pour $E_1(p)=0$, puis la mettre') + FIN;
+        choices = all.map((x) => x.tex); correctIndex = all.findIndex((x) => x.ok);
+      }
+      return Object.assign(baseQ(lit ? 's_lit' : 's_ft', text), {
+        choiceKind: 'math', choices, correctIndex, steps: explainPR(P, variant === 'both' ? 'both' : variant), block: BF ? BF.draw(s) : '', model: specOf(s), pr: variant,
+      });
+    }
+    throw new Error('qPR');
   }
 
   // propositions pour l'identification de K, ω0 et ξ
@@ -3389,10 +3485,10 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     }
     throw new Error('qFrac');
   }
-  const FAMILIES = { s_ft: () => qCanon(false), s_lit: () => qCanon(true), s_frac: qFrac, s_ident: qIdent };
+  const FAMILIES = { s_ft: () => (PR ? qPR(false) : qCanon(false)), s_lit: () => (PR ? qPR(true) : qCanon(true)), s_frac: qFrac, s_ident: qIdent };
   function generateSet(families, n, o) {
-    POS = !!(o && o.pos);
-    try { return generateSetInner(families, n); } finally { POS = false; }
+    POS = !!(o && o.pos); PR = !!(o && o.pr);
+    try { return generateSetInner(families, n); } finally { POS = false; PR = false; }
   }
   function generateSetInner(families, n) {
     const fams = families && families.length ? families : Object.keys(FAMILIES);
@@ -3404,7 +3500,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
 
-  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, setPos: (v) => { POS = !!v; }, qCanon, qIdent, qFrac, wxChoices, specOf };
+  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, setPos: (v) => { POS = !!v; }, setPR: (v) => { PR = !!v; }, splitPR, makeSchemePR, qPR, qCanon, qIdent, qFrac, wxChoices, specOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slci = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3738,7 +3834,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Association de blocs', UL(['<b>Blocs en série</b> : les fonctions de transfert se multiplient.', '<b>Blocs en parallèle</b> (sommateur) : les fonctions de transfert s\'additionnent.', '<b>Boucle à retour négatif</b> : formule de Black.']) +
           '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.<br><b>Retour positif</b> (signe ' + T('+') + ' sur le retour du comparateur) : le signe devant ' + T('H_r(p)\\,G(p)') + ' s\'inverse :' + D('H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}') + '</div>' +
           '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'G(p)', denTex: '' }], fb: [{ numTex: 'H_{r}(p)', denTex: '' }], post: [], lit: true }) + '<figcaption>Boucle à retour négatif : chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + '.</figcaption></figure>' +
-          '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>');
+          '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>') +
+        card('Poursuite et régulation', '<p>Un second sommateur introduit une <b>perturbation</b> ' + T('E_2(p)') + ' en plus de la <b>consigne</b> ' + T('E_1(p)') + '.</p>' +
+          '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'A(p)', denTex: '' }, { numTex: 'B(p)', denTex: '' }], fb: [{ numTex: 'C(p)', denTex: '' }], post: [], lit: true, dist: { at: 1 } }) + '<figcaption>Consigne ' + T('E_1(p)') + ', perturbation ' + T('E_2(p)') + ', sortie ' + T('S(p)') + '. Bloc ' + T('A(p)') + ' avant le sommateur de perturbation, bloc ' + T('B(p)') + ' après, retour ' + T('C(p)') + '.</figcaption></figure>' +
+          UL(['<b>Poursuite</b> : perturbation nulle, ' + T('E_2(p)=0') + '.', '<b>Régulation</b> : consigne nulle, ' + T('E_1(p)=0') + '.']) +
+          '<div class="rule"><b>Principe de superposition.</b> Le système est linéaire : les effets des deux entrées s\'additionnent.' + D('\\begin{aligned}S(p)&=H_{pours}(p)\\,E_1(p)\\\\&\\quad+H_{reg}(p)\\,E_2(p)\\end{aligned}') +
+          D('H_{pours}(p)=\\dfrac{A(p)\\,B(p)}{1+A(p)\\,B(p)\\,C(p)}') + D('H_{reg}(p)=\\dfrac{B(p)}{1+A(p)\\,B(p)\\,C(p)}') +
+          'Les deux fonctions de transfert ont le <b>même dénominateur</b> ' + T('1+FTBO(p)') + ', avec ' + T('FTBO(p)=A(p)\\,B(p)\\,C(p)') + '. Avec un retour positif, ce dénominateur devient ' + T('1-FTBO(p)') + '.</div>' +
+          '<p>Pour un schéma plus complexe, écrire les équations de chaque bloc (calcul littéral) est souvent plus rapide que la manipulation du schéma.</p>');
     }
     function slciMethod() {
       const S = root.Slci, BFg = root.BlockFigs;
@@ -3756,6 +3859,19 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Exemple traité', fig + D('H_{BF}(p)=\\dfrac{\\dfrac{K_1}{p(1+\\tau_1p)}}{1+K_c\\times\\dfrac{K_1}{p(1+\\tau_1p)}}=\\dfrac{K_1}{p(1+\\tau_1p)+K_cK_1}=\\dfrac{K_1}{K_1K_c+p+\\tau_1p^{2}}') +
           '<p>Le terme constant est ' + T('d_0=K_1K_c') + ' : division du numérateur et du dénominateur par ' + T('K_1K_c') + ' :</p>' + D('H_{BF}(p)=\\dfrac{\\dfrac{1}{K_c}}{1+\\dfrac{1}{K_1K_c}\\,p+\\dfrac{\\tau_1}{K_1K_c}\\,p^{2}}') +
           '<p>Ordre ' + T('2') + ', classe ' + T('0') + ', gain statique ' + T('K=\\dfrac{1}{K_c}') + '. Identification : ' + T('\\omega_0=\\sqrt{\\dfrac{K_1K_c}{\\tau_1}}') + ' et ' + T('\\xi=\\dfrac{1}{2\\sqrt{K_1K_c\\tau_1}}') + '.</p>') +
+        card('Poursuite et régulation', OL([
+          '<b>Repérer</b> les trois blocs : ' + T('A(p)') + ' avant le sommateur de perturbation, ' + T('B(p)') + ' après, ' + T('C(p)') + ' sur le retour (' + T('C(p)=1') + ' si le retour est unitaire), puis la consigne ' + T('E_1(p)') + ' et la perturbation ' + T('E_2(p)') + '.',
+          '<b>Superposition</b> : écrire ' + T('S(p)=H_{pours}(p)\\,E_1(p)+H_{reg}(p)\\,E_2(p)') + '. Chaque fonction de transfert se calcule avec <b>une seule entrée non nulle</b>.',
+          '<b>Poursuite</b> (' + T('E_2=0') + ') : le sommateur de perturbation disparaît. Boucle simple de chaîne directe ' + T('A\\,B') + ' et de retour ' + T('C') + ' :' + D('H_{pours}=\\dfrac{AB}{1+ABC}'),
+          '<b>Régulation</b> (' + T('E_1=0') + ') : la consigne est nulle, le comparateur ne reçoit que le retour. Deux lectures équivalentes. <i>Calcul littéral</i> : ' + T('\\varepsilon=-C\\,S') + ' et ' + T('S=B\\,(E_2+A\\,\\varepsilon)') + ', donc ' + T('S\\,(1+ABC)=B\\,E_2') + '. <i>Boucle simple vue depuis ' + T('E_2') + '</i> : chaîne directe ' + T('B') + ', chaîne de retour ' + T('A\\,C') + '.' + D('H_{reg}=\\dfrac{B}{1+B\\,(A\\,C)}=\\dfrac{B}{1+ABC}'),
+          '<b>Contrôler</b> : les deux fonctions de transfert ont le même dénominateur ' + T('1+ABC') + ' ; le numérateur est ' + T('AB') + ' pour la poursuite et ' + T('B') + ' pour la régulation.',
+          '<b>Mettre chacune sous forme canonique</b> avec la démarche habituelle (fractions de fractions, développement, normalisation).',
+        ]) +
+          '<p><b>Exemple</b> : ' + T('A(p)=K_1') + ', ' + T('B(p)=\\dfrac{K_2}{1+\\tau p}') + ', ' + T('C(p)=K_c') + '.</p>' +
+          '<figure class="fig blockfig">' + BFg.draw({ pre: [], direct: [S.gainB('K_{1}'), S.t1B('K_{2}', '\\tau')], fb: [S.gainB('K_{c}')], post: [], lit: true, dist: { at: 1 } }) + '<figcaption>Schéma de l\'exemple, avec perturbation.</figcaption></figure>' +
+          D('\\begin{aligned}H_{pours}(p)&=\\dfrac{\\dfrac{K_1K_2}{1+\\tau p}}{1+\\dfrac{K_1K_2K_c}{1+\\tau p}}\\\\&=\\dfrac{K_1K_2}{1+K_1K_2K_c+\\tau p}\\\\&=\\dfrac{\\dfrac{K_1K_2}{1+K_1K_2K_c}}{1+\\dfrac{\\tau}{1+K_1K_2K_c}\\,p}\\end{aligned}') +
+          D('\\begin{aligned}H_{reg}(p)&=\\dfrac{\\dfrac{K_2}{1+\\tau p}}{1+\\dfrac{K_1K_2K_c}{1+\\tau p}}\\\\&=\\dfrac{K_2}{1+K_1K_2K_c+\\tau p}\\\\&=\\dfrac{\\dfrac{K_2}{1+K_1K_2K_c}}{1+\\dfrac{\\tau}{1+K_1K_2K_c}\\,p}\\end{aligned}') +
+          '<p>Même dénominateur pour les deux : même ordre, même classe, même constante de temps. Seuls les gains diffèrent.</p>') +
         card('Fractions de fractions', '<p>Pour faire disparaître les petites fractions, multiplier le haut et le bas de la grande fraction par leur dénominateur commun :</p>' + D('\\dfrac{\\dfrac{a}{b}}{1+\\dfrac{c}{b}}=\\dfrac{\\dfrac{a}{b}\\times b}{\\left(1+\\dfrac{c}{b}\\right)\\times b}=\\dfrac{a}{b+c}') +
           '<p>Avec un capteur du premier ordre, ' + T('G=\\dfrac{N_G}{D_G}') + ' et ' + T('H_r=\\dfrac{N_H}{D_H}') + ' :</p>' + D('H_{BF}=\\dfrac{N_G\\,D_H}{D_G\\,D_H+N_G\\,N_H}')) +
         card('Normalisation', '<p>Diviser le haut et le bas par le terme de plus bas degré non nul du dénominateur. Exemple numérique :</p>' + D('\\dfrac{8}{2+4p+p^{2}}=\\dfrac{8/2}{2/2+(4/2)\\,p+(1/2)\\,p^{2}}=\\dfrac{4}{1+2p+0{,}5\\,p^{2}}') +
@@ -3764,6 +3880,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Pièges courants', UL([
           'Oublier le <b>signe</b> de la boucle : un signe ' + T('-') + ' sur le retour du comparateur donne ' + T('1+H_rG') + ', un signe ' + T('+') + ' donne ' + T('1-H_rG') + '.',
           'Oublier le capteur dans le dénominateur, ou le multiplier au numérateur.',
+          'Poursuite et régulation : oublier le bloc ' + T('A') + ' dans le dénominateur de la régulation. Le dénominateur ' + T('1+ABC') + ' est le même pour les deux, jamais ' + T('1+BC') + '.',
+          'Confondre les deux fonctions de transfert : le numérateur est ' + T('AB') + ' pour la consigne ' + T('E_1') + ' et ' + T('B') + ' pour la perturbation ' + T('E_2') + '.',
           'Ne diviser que le terme constant par ' + T('d_0') + ' en oubliant les autres coefficients, ou oublier de diviser le gain.',
           'Inverser ' + T('\\omega_0') + ' : ' + T('\\omega_0=1/\\sqrt{a_2}') + ' et non ' + T('\\sqrt{a_2}') + '.',
           'Oublier les blocs situés hors de la boucle, qui modifient le gain, l\'ordre et la classe.',
@@ -3866,8 +3984,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       desc: 'Schémas blocs avec boucle de retour : formule de Black, fractions de fractions, forme canonique, ordre, classe, ξ et ω0.',
       intro: 'Chaque exercice présente un schéma bloc, avec ou sans capteur, avec éventuellement des blocs avant ou après la boucle. Il s\'agit de calculer la fonction de transfert H(p)=S(p)/E(p) : formule de Black, suppression des fractions de fractions, mise sous forme canonique, puis identification de l\'ordre, de la classe, du gain, de ξ et de ω0. La correction détaille chaque étape.',
       fams: Object.keys(SL.FAM).map((k) => [k, SL.FAM[k]]),
-      gen: (fams, n, o) => SL.generateSet(fams, n, { pos: o.pos }),
-      options: [['pos', 'Retour positif possible (signe + sur le retour du comparateur)']], recap: Recaps.slci, method: Recaps.slciMethod,
+      gen: (fams, n, o) => SL.generateSet(fams, n, { pos: o.pos, pr: o.pr }),
+      options: [['pos', 'Retour positif possible (signe + sur le retour du comparateur)'], ['pr', 'Poursuite et régulation : schémas avec perturbation (second sommateur), pour les types « fonction de transfert »']], recap: Recaps.slci, method: Recaps.slciMethod,
     },
     rdm: {
       title: 'Résistance des matériaux', color: 'var(--orange)',
@@ -3887,7 +4005,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   ORDER.forEach((t) => {
     const s = settings.themes[t] || {};
     const valid = (s.fams || []).filter((k) => THEMES[t].fams.some((f) => f[0] === k));
-    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, pos: !!s.pos, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
+    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, pos: !!s.pos, pr: !!s.pr, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
   });
   const save = () => store.set('qcm-settings', settings);
   let cur = null;      // thème courant

@@ -200,6 +200,15 @@ ul.quant li { margin: 3px 0; }
 
 figure.blockfig { margin: 10px 0 14px; overflow-x: auto; border-radius: 10px; }
 figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height: auto; }
+
+/* Suivi des performances */
+svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
+.hist .hrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.hist .hrow:last-child { border-bottom: 0; }
+.hist .hd { color: var(--muted); font-size: .82rem; grid-column: 1 / -1; }
+.hist .ht { min-width: 0; }
+.hist .hs { white-space: nowrap; text-align: right; }
+.btn.danger { background: var(--orange); border-color: var(--orange); color: #1b1b1b; }
 </style>
 </head>
 <body>
@@ -3803,6 +3812,12 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignoré */ } },
   };
 
+  // ---------- Historique des séries (pour suivre l'évolution) ----------
+  const HKEY = 'qcm-history', HMAX = 500;
+  const history = () => { const h = store.get(HKEY, []); return Array.isArray(h) ? h : []; };
+  const fmtDate = (t) => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  const fmtFull = (t) => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
   // ---------- Thèmes : pour ajouter un thème, ajouter une entrée ici ----------
   const THEMES = {
     calc: {
@@ -3889,6 +3904,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
         const T = THEMES[t], sc = themeScore(t);
         return '<button class="theme" data-theme="' + t + '" style="--tc:' + T.color + '"><span class="tt">' + esc(T.title) + '</span><span class="td">' + esc(T.desc) + '</span>' + (sc ? '<span class="ts">' + esc(sc) + '</span>' : '') + '</button>';
       }).join('') + '</div>' +
+      '<div class="btns"><button class="btn secondary" data-act="suivi">Suivi de mes performances</button></div>' +
       '<p class="foot">Lycée Jules Renard, PTSI-PT. Les progrès sont enregistrés uniquement sur cet appareil.</p>';
     window.scrollTo(0, 0);
   }
@@ -3901,7 +3917,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
     return '<section class="card"><h2>Progression sur cet appareil</h2>' + rows.map(([k, l]) => {
       const s = st[k]; const pct = Math.round((100 * s.ok) / s.total);
       return '<div class="statrow"><span>' + esc(l) + '</span><b style="text-align:right">' + s.ok + ' / ' + s.total + '</b><div class="bar"><i style="width:' + pct + '%"></i></div></div>';
-    }).join('') + '<div class="row" style="margin-top:8px"><button class="linkbtn" data-act="reset-stats">Effacer la progression de ce thème</button></div></section>';
+    }).join('') + '<div class="row" style="margin-top:8px"><button class="linkbtn" data-act="suivi-here">Voir l\'évolution</button><button class="linkbtn" data-act="reset-stats">Supprimer l\'historique de ce thème</button></div></section>';
   }
   function setup(t) {
     cur = t; session = null;
@@ -3927,6 +3943,79 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
       '<button class="btn secondary" data-act="recap">Rappels</button>' + (T.method ? '<button class="btn secondary" data-act="method">Méthode</button>' : '') + '</div></section>' +
       statsHTML(t) + '<p class="foot">Lycée Jules Renard, PTSI-PT.</p>';
     window.scrollTo(0, 0);
+  }
+
+  // ---------- Suivi des performances ----------
+  let suiviSel = 'all', resetAsk = false;
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  function chartSVG(pts, color) {
+    const W = 320, H = 150, L = 34, R = 10, T = 12, B = 24, iw = W - L - R, ih = H - T - B;
+    const X = (i) => L + (pts.length === 1 ? iw / 2 : (iw * i) / (pts.length - 1)), Y = (v) => T + ih * (1 - v / 100);
+    let g = '';
+    [0, 50, 100].forEach((v) => { g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 5) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + v + ' %</text>'; });
+    const path = pts.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+    const dots = pts.map((p, i) => '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="3.5" fill="' + color + '"/>').join('');
+    const lab = '<text x="' + L + '" y="' + (H - 6) + '" font-size="10" fill="var(--muted)">' + fmtDate(pts[0].t) + '</text><text x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + fmtDate(pts[pts.length - 1].t) + '</text>';
+    return '<svg class="evo" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Évolution du pourcentage de bonnes réponses par série">' + g + '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' + dots + lab + '</svg>';
+  }
+  function suivi(sel) {
+    session = null; cur = null; closeSheet();
+    if (sel) suiviSel = sel;
+    const all = history();
+    const hs = suiviSel === 'all' ? all : all.filter((e) => e.th === suiviSel);
+    const main = hs.filter((e) => !e.r);
+    const color = suiviSel === 'all' ? '#009d01' : '#009d01';
+    const pctOf = (e) => (100 * e.ok) / e.n;
+    let h = '<div class="topbar"><button class="linkbtn back" data-act="home">← Thèmes</button></div>' + brand('Suivi des performances', 'Évolution des séries terminées sur cet appareil');
+    h += '<section class="card"><div class="field"><span class="lab">Thème</span><div class="row" id="stchips"><button class="chip" data-st="all" aria-pressed="' + (suiviSel === 'all') + '">Tous</button>' +
+      ORDER.map((t) => '<button class="chip" data-st="' + t + '" aria-pressed="' + (suiviSel === t) + '">' + esc(THEMES[t].title) + '</button>').join('') + '</div></div></section>';
+    if (!hs.length) {
+      h += '<section class="card"><p>Aucune série enregistrée pour ce choix. Chaque série terminée est ajoutée automatiquement à l\'historique, avec la date, le mode et le score.</p></section>';
+    } else {
+      const sc = main.map(pctOf);
+      const last5 = sc.slice(-5), prev5 = sc.slice(-10, -5);
+      let trend = '';
+      if (last5.length && prev5.length) {
+        const d = Math.round(avg(last5) - avg(prev5));
+        trend = '<p>Moyenne des ' + last5.length + ' dernières séries : <b>' + Math.round(avg(last5)) + ' %</b>, contre ' + Math.round(avg(prev5)) + ' % pour les ' + prev5.length + ' précédentes (' + (d > 0 ? '+' : '') + d + ' points).</p>';
+      }
+      h += '<section class="card"><h2>Évolution</h2>' +
+        '<p>' + hs.length + ' série' + (hs.length > 1 ? 's' : '') + ' enregistrée' + (hs.length > 1 ? 's' : '') + (main.length ? ', score moyen <b>' + Math.round(avg(sc)) + ' %</b>' : '') + '.</p>' +
+        (main.length >= 2 ? chartSVG(main.map((e) => ({ t: e.t, v: pctOf(e) })), color) + '<div class="hint">Pourcentage de bonnes réponses série par série (les reprises de questions manquées ne sont pas tracées).</div>' : '<div class="hint">Au moins deux séries complètes sont nécessaires pour tracer la courbe.</div>') + trend + '</section>';
+      const fk = {};
+      hs.forEach((e) => Object.keys(e.f || {}).forEach((k) => { (fk[k] = fk[k] || []).push({ ok: e.f[k][0], total: e.f[k][1] }); }));
+      const keys = Object.keys(fk).filter((k) => famLabel[k]);
+      if (keys.length) {
+        h += '<section class="card"><h2>Par type de question</h2>' + keys.map((k) => {
+          const a = fk[k], sum = (x) => x.reduce((u, v) => ({ ok: u.ok + v.ok, total: u.total + v.total }), { ok: 0, total: 0 });
+          const t = sum(a), p = Math.round((100 * t.ok) / t.total);
+          let ev = '';
+          if (a.length >= 4) {
+            const m = Math.floor(a.length / 2), x = sum(a.slice(0, m)), y = sum(a.slice(m));
+            ev = '<div class="hint">' + Math.round((100 * x.ok) / x.total) + ' % au début, ' + Math.round((100 * y.ok) / y.total) + ' % récemment</div>';
+          }
+          return '<div class="statrow"><span>' + esc(famLabel[k]) + '</span><b style="text-align:right">' + t.ok + ' / ' + t.total + '</b><div class="bar"><i style="width:' + p + '%"></i></div></div>' + ev;
+        }).join('') + '</section>';
+      }
+      h += '<section class="card"><h2>Dernières séries</h2><div class="hist">' + hs.slice(-15).reverse().map((e) => {
+        const p = Math.round(pctOf(e));
+        return '<div class="hrow"><span class="hd">' + fmtFull(e.t) + '</span><span class="ht">' + esc(THEMES[e.th] ? THEMES[e.th].title : e.th) + ' · ' + (e.m === 'test' ? 'contrôle' : 'entraînement') + (e.r ? ' · reprise des erreurs' : '') + '</span><b class="hs">' + e.ok + ' / ' + e.n + ' (' + p + ' %)</b></div>';
+      }).join('') + '</div></section>';
+    }
+    const scope = suiviSel === 'all' ? 'de tous les thèmes' : 'du thème « ' + THEMES[suiviSel].title + ' »';
+    h += '<section class="card"><h2>Données enregistrées</h2>' + (resetAsk
+      ? '<p><b>Supprimer définitivement l\'historique et la progression ' + esc(scope) + ' ?</b> Cette action ne peut pas être annulée.</p><div class="btns"><button class="btn danger" data-act="reset-confirm">Oui, supprimer</button><button class="btn secondary" data-act="reset-cancel">Annuler</button></div>'
+      : '<p>L\'historique est conservé uniquement sur cet appareil, dans le navigateur.</p><div class="row"><button class="linkbtn" data-act="reset-ask">Supprimer l\'historique ' + esc(scope) + '</button></div>') + '</section>' +
+      '<p class="foot">Lycée Jules Renard, PTSI-PT.</p>';
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+  }
+  function wipe(sel) {
+    const st = store.get('qcm-stats', {});
+    const ths = sel === 'all' ? ORDER : [sel];
+    ths.forEach((t) => THEMES[t].fams.forEach(([k]) => { delete st[k]; }));
+    store.set('qcm-stats', st);
+    store.set(HKEY, sel === 'all' ? [] : history().filter((e) => e.th !== sel));
   }
 
   // ---------- Questions ----------
@@ -4039,11 +4128,20 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
     const qs = session.qs, an = session.answers;
     const ok = qs.filter((q, i) => isOk(q, an[i])).length;
     const st = store.get('qcm-stats', {});
-    qs.forEach((q, i) => { const s = st[q.family] || { ok: 0, total: 0 }; s.total++; if (isOk(q, an[i])) s.ok++; st[q.family] = s; });
-    store.set('qcm-stats', st);
+    if (!session.statsDone) {
+      qs.forEach((q, i) => { const s = st[q.family] || { ok: 0, total: 0 }; s.total++; if (isOk(q, an[i])) s.ok++; st[q.family] = s; });
+      session.statsDone = true;
+      store.set('qcm-stats', st);
+    }
     const by = {};
     qs.forEach((q, i) => { const s = by[q.family] || { ok: 0, total: 0 }; s.total++; if (isOk(q, an[i])) s.ok++; by[q.family] = s; });
     const pct = Math.round((100 * ok) / qs.length);
+    if (!session.recorded) {
+      session.recorded = true;
+      const fm = {}; Object.keys(by).forEach((k) => { fm[k] = [by[k].ok, by[k].total]; });
+      const hh = history(); hh.push({ t: Date.now(), th: cur, m: settings.mode, ok, n: qs.length, r: session.retry ? 1 : 0, f: fm });
+      store.set(HKEY, hh.slice(-HMAX));
+    }
     const msg = pct === 100 ? 'Sans faute.' : pct >= 70 ? 'Bon résultat.' : pct >= 40 ? 'À consolider : la correction détaillée aide à repérer les erreurs.' : 'À reprendre avec les rappels.';
     let h = '<h1>Résultats</h1><section class="card"><div class="score"><div class="big">' + ok + ' / ' + qs.length + '</div><div class="sub">' + msg + '</div></div>';
     h += Object.keys(by).map((k) => {
@@ -4098,9 +4196,10 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
   // ---------- Événements ----------
   function newSet(n) { const S = settings.themes[cur]; return THEMES[cur].gen(S.fams, n, S); }
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-act],[data-theme],[data-fam],[data-n],[data-mode],[data-choice],[data-choicemode],[data-tab]');
+    const t = e.target.closest('[data-act],[data-theme],[data-fam],[data-n],[data-mode],[data-choice],[data-choicemode],[data-tab],[data-st]');
     if (!t) return;
     if (t.dataset.theme) return setup(t.dataset.theme);
+    if (t.dataset.st) { resetAsk = false; return suivi(t.dataset.st); }
     if (t.dataset.tab) return recap(t.dataset.tab);
     if (t.dataset.fam) {
       const S = settings.themes[cur], k = t.dataset.fam;
@@ -4119,16 +4218,17 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
       case 'home': return home();
       case 'retry': {
         const wrong = session.qs.filter((q, i) => !isOk(q, session.answers[i])).map((q) => Object.assign({}, q));
-        return startSession(wrong);
+        startSession(wrong); session.retry = true; return;
       }
       case 'recap': return recap('recap');
       case 'method': return recap('method');
       case 'close-sheet': return closeSheet();
-      case 'reset-stats': {
-        const st = store.get('qcm-stats', {});
-        THEMES[cur].fams.forEach(([k]) => { delete st[k]; });
-        store.set('qcm-stats', st); return setup(cur);
-      }
+      case 'suivi': resetAsk = false; return suivi('all');
+      case 'suivi-here': resetAsk = false; return suivi(cur);
+      case 'reset-stats': resetAsk = true; return suivi(cur);
+      case 'reset-ask': resetAsk = true; return suivi();
+      case 'reset-cancel': resetAsk = false; return suivi();
+      case 'reset-confirm': wipe(suiviSel); resetAsk = false; return suivi();
     }
   });
   document.addEventListener('change', (e) => {

@@ -2783,7 +2783,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         const d = R * Math.SQRT1_2;
         h += '<circle cx="' + f1(cx) + '" cy="' + y0 + '" r="' + R + '" fill="var(--fig-bg)" stroke="' + FG + '" stroke-width="1.6"/>';
         h += '<line x1="' + f1(cx - d) + '" y1="' + f1(y0 - d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 + d) + '" stroke="' + FG + '" stroke-width="1.3"/><line x1="' + f1(cx - d) + '" y1="' + f1(y0 + d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 - d) + '" stroke="' + FG + '" stroke-width="1.3"/>';
-        h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 + 14) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="16" font-weight="bold" text-anchor="middle">−</text>';
+        h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 + 14) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="16" font-weight="bold" text-anchor="middle">' + (s.pos ? '+' : '−') + '</text>';
         xc = cx; prev = cx + R; return;
       }
       const bw = blockW(e.b); let bx = prev + gap;
@@ -3032,7 +3032,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   function evalScheme(s, m) {
     m = m || {};
     const G = seriesOf(s.direct); const H = m.noSensor ? UNIT : seriesOf(s.fb);
-    let L = black(G, H, m.signFlip ? -1 : 1);
+    let L = black(G, H, (s.pos ? -1 : 1) * (m.signFlip ? -1 : 1));
     if (m.openLoop) L = { N: G.N, D: G.D };
     if (m.numH) L = { N: PM.mul(G.N, H.N), D: L.D };
     let T = L;
@@ -3044,10 +3044,11 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const classOf = (rf) => PM.low(rf.D);
 
   const rnd = () => R.rand();
+  let POS = false; // option : retour positif possible (signe + sur le retour du comparateur)
   function wpick(pairs) { let t = 0; pairs.forEach((p) => { t += p[1]; }); let x = rnd() * t; for (const p of pairs) { x -= p[1]; if (x < 0) return p[0]; } return pairs[0][0]; }
 
   // construction aléatoire d'un schéma (descripteurs puis instanciation dans l'ordre de lecture)
-  function randomScheme(lit) {
+  function randomScheme(lit, forcePos) {
     const dirKinds = wpick([
       [['gain'], 1], [['t1'], 3], [['t2'], lit ? 0 : 2], [['int'], 1], [['gain', 'int'], 1], [['t1', 'int'], 3], [['gain', 't1'], 2], [['t1', 't1'], 2], [['t1', 'gain'], 1], [['int', 't1'], 1], [['gain', 't1', 'int'], 1], [['t2', 'int'], lit ? 0 : 1],
     ]);
@@ -3067,7 +3068,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     };
     const preB = pre ? [mk(pre)] : []; const direct = dirKinds.map(mk); const postB = post ? [mk(post)] : [];
     const fb = fbKind ? [fbKind === 'gain' ? gainB(lit ? 'K_{c}' : pick(['0.1', '0.2', '0.5', '2', '0.25', '0.4'])) : t1B(lit ? 'K_{c}' : pick(['0.5', '1', '2']), lit ? '\\tau_{c}' : pick(['0.1', '0.2', '0.5']))] : [];
-    return { pre: preB, direct, fb, post: postB, lit: !!lit };
+    return { pre: preB, direct, fb, post: postB, lit: !!lit, pos: !!forcePos };
   }
   function niceSecond(c) {
     if (c.a.length !== 3 || c.alpha !== 0) return null;
@@ -3102,8 +3103,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return { ev, T, c, sec, order: od, cls: cl };
   }
   function makeScheme(lit, need) {
+    const wantPos = POS && rnd() < 0.4;
     for (let k = 0; k < 6000; k++) {
-      const s = randomScheme(lit); const a = checkScheme(s); if (!a) continue;
+      const s = randomScheme(lit, wantPos && k < 4000); const a = checkScheme(s); if (!a) continue;
       if (need && !need(a)) continue;
       return Object.assign({ s }, a);
     }
@@ -3129,6 +3131,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const { T, c } = E; const lit = s.lit; const steps = [];
     const hasFb = s.fb.length > 0, hasPre = s.pre.length > 0, hasPost = s.post.length > 0;
     const G = s.direct, H = s.fb;
+    const sg = s.pos ? '-' : '+';
     const gTeX = chainTeX(G), hTeX = hasFb ? chainTeX(H) : '1';
     const nG = chainNum(G), nH = chainNum(H), dG = chainDfs(G), dH = chainDfs(H);
     const dGt = dfDisplay(dG), dHt = dfDisplay(dH);
@@ -3136,7 +3139,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const prodNote = (bs) => { const g = bs.map((b) => mpTeX(b.N[0])).filter((t) => t !== '1'); return !lit && g.length > 1 ? ' ; les numérateurs constants se multiplient : $' + g.join(lit ? '' : '\\times') + '=' + mpTeX(chainNum(bs)) + '$' : ''; };
 
     // 1. Structure
-    const l1 = ['**Repérer la structure du schéma.** Les blocs en série se multiplient. La boucle est à retour négatif (comparateur avec le signe moins sur le retour).'];
+    const l1 = ['**Repérer la structure du schéma.** Les blocs en série se multiplient. ' + (s.pos ? 'La boucle est à retour positif (comparateur avec le signe plus sur le retour).' : 'La boucle est à retour négatif (comparateur avec le signe moins sur le retour).')];
     if (hasPre) l1.push('Bloc avant la boucle : $A(p)=' + chainTeX(s.pre) + '$.');
     l1.push('Chaîne directe de la boucle : $G(p)=' + gTeX + '$' + prodNote(G) + '.');
     l1.push(hasFb ? 'Chaîne de retour : $H_r(p)=' + hTeX + '$.' : 'Retour unitaire : $H_r(p)=1$.');
@@ -3145,14 +3148,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
 
     // 2. Black
     const ghTeX = (hasFb ? hTeX + '\\times' : '') + gTeX;
-    steps.push('**Formule de Black** appliquée à la boucle : $H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}$. Remplacement :\n$$H_{BF}(p)=\\dfrac{' + gTeX + '}{1+' + ghTeX + '}$$');
+    steps.push('**Formule de Black** appliquée à la boucle : ' + (s.pos ? 'avec un signe $+$ sur le retour du comparateur, le signe devant $H_r(p)\\,G(p)$ s\'inverse : $H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}$.' : '$H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}$.') + ' Remplacement :\n$$H_{BF}(p)=\\dfrac{' + gTeX + '}{1' + sg + ghTeX + '}$$');
 
     // 3. Fractions de fractions
     const numFac = prodTeX([mpPart(nG)].concat(dH.length ? [dfDisplay(dH, mpPart(nG) !== '')] : []));
     const dAll = dfDisplay(dG.concat(dH));
     const denProd = dAll;
     const denRet = prodTeX([mpPart(nH), mpPart(nG)]);
-    const denStr = (denProd === '1' ? '1' : denProd) + '+' + (denRet === '1' ? '1' : denRet);
+    const denStr = (denProd === '1' ? '1' : denProd) + sg + (denRet === '1' ? '1' : denRet);
     const mulBy = dAll;
     const step3 = '**Supprimer la fraction de fractions** : multiplier le numérateur et le dénominateur de la grande fraction par ' + (mulBy === '1' ? 'une quantité égale à 1 (aucun dénominateur à éliminer dans ce cas)' : '$' + mulBy + '$, produit des dénominateurs de $G$ et de $H_r$') + '. Chaque petite fraction disparaît et il reste un seul trait de fraction :\n$$H_{BF}(p)=\\dfrac{' + (numFac === '1' ? '1' : numFac) + '}{' + denStr + '}$$';
     steps.push(step3);
@@ -3235,7 +3238,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
 
   // ======================= Questions =======================
   const BF = root.BlockFigs || (typeof require === 'function' ? require('./blockfigs.js') : null);
-  const specOf = (s) => ({ lit: s.lit, pre: s.pre.map((b) => b.spec), direct: s.direct.map((b) => b.spec), fb: s.fb.map((b) => b.spec), post: s.post.map((b) => b.spec) });
+  const specOf = (s) => ({ lit: s.lit, pos: !!s.pos, pre: s.pre.map((b) => b.spec), direct: s.direct.map((b) => b.spec), fb: s.fb.map((b) => b.spec), post: s.post.map((b) => b.spec) });
   const SAMP = [0.37, 1.3, 2.9];
   const rndAssign = (vars) => { const as = {}; vars.forEach((v) => { as[v] = 0.5 + rnd() * 3; }); return as; };
   function allVars(cs) { const set = new Set(); cs.forEach((c) => [c.K].concat(c.a, c.b).forEach((r) => { mpVars(r.num).forEach((v) => set.add(v)); mpVars(r.den).forEach((v) => set.add(v)); })); return Array.from(set); }
@@ -3350,18 +3353,18 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
 
   function blackTeX(s) {
     const g = chainTeX(s.direct); const h = s.fb.length ? chainTeX(s.fb) : '';
-    return '\\dfrac{' + g + '}{1+' + (h ? h + '\\times' : '') + g + '}';
+    return '\\dfrac{' + g + '}{1' + (s.pos ? '-' : '+') + (h ? h + '\\times' : '') + g + '}';
   }
   function qFrac() {
     for (let k = 0; k < 300; k++) {
       const E0 = makeScheme(false); const s0 = E0.s;
-      const s = { pre: [], direct: s0.direct, fb: s0.fb, post: [], lit: false };
+      const s = { pre: [], direct: s0.direct, fb: s0.fb, post: [], lit: false, pos: s0.pos };
       const ev = evalScheme(s); const L = ev.L;
       if (PM.deg(L.D) > 3 || mpIsZero(L.N[0]) || PM.deg(L.D) < 1) continue;
       const G = seriesOf(s.direct), H = seriesOf(s.fb);
       const mk = (N, D) => ({ N, D });
       const cs = [
-        mk(PM.mul(G.N, H.D), PM.sub(PM.mul(G.D, H.D), PM.mul(G.N, H.N))),
+        black(G, H, s.pos ? 1 : -1),
         mk(G.N, L.D), mk(PM.mul(G.N, H.D), PM.add(G.D, PM.mul(G.N, H.N))),
         mk(PM.mul(G.N, H.D), PM.add(PM.mul(G.D, H.D), H.N)), mk(PM.mul(G.N, H.D), PM.add(PM.mul(G.D, H.D), G.N)),
         mk(H.D, L.D), mk(PM.mul(G.N, H.D), PM.mul(G.D, H.D)), mk(PM.mul(G.N, H.N), L.D),
@@ -3387,7 +3390,11 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     throw new Error('qFrac');
   }
   const FAMILIES = { s_ft: () => qCanon(false), s_lit: () => qCanon(true), s_frac: qFrac, s_ident: qIdent };
-  function generateSet(families, n) {
+  function generateSet(families, n, o) {
+    POS = !!(o && o.pos);
+    try { return generateSetInner(families, n); } finally { POS = false; }
+  }
+  function generateSetInner(families, n) {
     const fams = families && families.length ? families : Object.keys(FAMILIES);
     const out = []; const seen = new Set(); let guard = 0, idx = 0;
     while (out.length < n && guard++ < n * 40) {
@@ -3397,7 +3404,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
 
-  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, qCanon, qIdent, qFrac, wxChoices, specOf };
+  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, setPos: (v) => { POS = !!v; }, qCanon, qIdent, qFrac, wxChoices, specOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slci = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3729,7 +3736,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           ['Gain', T('K'), '0', '0'], ['Premier ordre', T('\\dfrac{K}{1+\\tau p}'), '1', '0'], ['Intégrateur', T('\\dfrac{K}{p}'), '1', '1'], ['Double intégrateur', T('\\dfrac{K}{p^{2}}'), '2', '2'], ['Second ordre', T('\\dfrac{K}{1+\\frac{2\\xi}{\\omega_0}p+\\frac{p^{2}}{\\omega_0^{2}}}'), '2', '0'], ['Intégrateur et premier ordre', T('\\dfrac{K}{p\\,(1+\\tau p)}'), '2', '1'],
         ])) +
         card('Association de blocs', UL(['<b>Blocs en série</b> : les fonctions de transfert se multiplient.', '<b>Blocs en parallèle</b> (sommateur) : les fonctions de transfert s\'additionnent.', '<b>Boucle à retour négatif</b> : formule de Black.']) +
-          '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.</div>' +
+          '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.<br><b>Retour positif</b> (signe ' + T('+') + ' sur le retour du comparateur) : le signe devant ' + T('H_r(p)\\,G(p)') + ' s\'inverse :' + D('H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}') + '</div>' +
           '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'G(p)', denTex: '' }], fb: [{ numTex: 'H_{r}(p)', denTex: '' }], post: [], lit: true }) + '<figcaption>Boucle à retour négatif : chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + '.</figcaption></figure>' +
           '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>');
     }
@@ -3755,7 +3762,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           '<p>Avec un terme en ' + T('p') + ' en facteur : ' + D('\\dfrac{6}{p\\,(3+p)}=\\dfrac{6/3}{p\\,\\left(1+\\dfrac{p}{3}\\right)}=\\dfrac{2}{p\\left(1+\\dfrac{1}{3}p\\right)}') + 'Classe ' + T('1') + ' : un intégrateur en facteur du dénominateur.</p>') +
         card('Identification d\'un second ordre', '<p>Pour ' + T('\\dfrac{K}{1+0{,}2\\,p+0{,}04\\,p^{2}}') + ' : ' + T('\\dfrac{1}{\\omega_0^{2}}=0{,}04') + ', donc ' + T('\\omega_0=5') + ' rad/s ; ' + T('\\dfrac{2\\xi}{\\omega_0}=0{,}2') + ', donc ' + T('\\xi=\\dfrac{0{,}2\\times5}{2}=0{,}5') + '.</p>') +
         card('Pièges courants', UL([
-          'Oublier le <b>signe</b> de la boucle : le retour négatif donne ' + T('1+H_rG') + ', jamais ' + T('1-H_rG') + '.',
+          'Oublier le <b>signe</b> de la boucle : un signe ' + T('-') + ' sur le retour du comparateur donne ' + T('1+H_rG') + ', un signe ' + T('+') + ' donne ' + T('1-H_rG') + '.',
           'Oublier le capteur dans le dénominateur, ou le multiplier au numérateur.',
           'Ne diviser que le terme constant par ' + T('d_0') + ' en oubliant les autres coefficients, ou oublier de diviser le gain.',
           'Inverser ' + T('\\omega_0') + ' : ' + T('\\omega_0=1/\\sqrt{a_2}') + ' et non ' + T('\\sqrt{a_2}') + '.',
@@ -3859,8 +3866,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       desc: 'Schémas blocs avec boucle de retour : formule de Black, fractions de fractions, forme canonique, ordre, classe, ξ et ω0.',
       intro: 'Chaque exercice présente un schéma bloc, avec ou sans capteur, avec éventuellement des blocs avant ou après la boucle. Il s\'agit de calculer la fonction de transfert H(p)=S(p)/E(p) : formule de Black, suppression des fractions de fractions, mise sous forme canonique, puis identification de l\'ordre, de la classe, du gain, de ξ et de ω0. La correction détaille chaque étape.',
       fams: Object.keys(SL.FAM).map((k) => [k, SL.FAM[k]]),
-      gen: (fams, n) => SL.generateSet(fams, n),
-      options: [], recap: Recaps.slci, method: Recaps.slciMethod,
+      gen: (fams, n, o) => SL.generateSet(fams, n, { pos: o.pos }),
+      options: [['pos', 'Retour positif possible (signe + sur le retour du comparateur)']], recap: Recaps.slci, method: Recaps.slciMethod,
     },
     rdm: {
       title: 'Résistance des matériaux', color: 'var(--orange)',
@@ -3880,7 +3887,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   ORDER.forEach((t) => {
     const s = settings.themes[t] || {};
     const valid = (s.fams || []).filter((k) => THEMES[t].fams.some((f) => f[0] === k));
-    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
+    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, pos: !!s.pos, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
   });
   const save = () => store.set('qcm-settings', settings);
   let cur = null;      // thème courant

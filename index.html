@@ -197,6 +197,9 @@ table.rtab.center th, table.rtab.center td { text-align: center; width: auto; }
 ul.quant { margin: 4px 0 6px; padding-left: 20px; }
 ul.quant li { margin: 3px 0; }
 .aid { margin: 10px 0 2px; padding: 8px 12px; border-left: 4px solid var(--lime); background: color-mix(in srgb, var(--lime) 14%, transparent); border-radius: 6px; font-size: .9rem; }
+
+figure.blockfig { margin: 10px 0 14px; overflow-x: auto; border-radius: 10px; }
+figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height: auto; }
 </style>
 </head>
 <body>
@@ -2610,13 +2613,13 @@ ul.quant li { margin: 3px 0; }
   const D2 = { 0.2: 52.7, 0.3: 37.2, 0.4: 25.4, 0.5: 16.3, 0.6: 9.5, 0.7: 4.6 };
   function tDepassement() {
     const z = pick([0.2, 0.3, 0.4, 0.5, 0.6, 0.7]); const val = 100 * Math.exp(-Math.PI * z / Math.sqrt(1 - z * z));
-    return { text: 'Un système du second ordre a un coefficient d\'amortissement $\\zeta=' + d(z) + '$. Quel est son premier dépassement relatif $D_1=100\\,e^{-\\pi\\zeta/\\sqrt{1-\\zeta^2}}$ ?', val, sig: 2, unit: '%',
-      steps: ['Méthode : retenir quelques valeurs : $\\zeta=0{,}3\\Rightarrow37\\ \\%$ ; $\\zeta=0{,}5\\Rightarrow16\\ \\%$ ; $\\zeta=0{,}7\\Rightarrow5\\ \\%$.', 'Ici, $\\zeta=' + d(z) + '$ : $D_1\\approx' + fmt(D2[z], 2) + '\\ \\%$.', 'Contrôle : $\\sqrt{1-' + d(z) + '^2}\\approx' + fmt(Math.sqrt(1 - z * z), 2) + '$, donc l\'exposant vaut $-\\dfrac{3{,}14\\times' + d(z) + '}{' + fmt(Math.sqrt(1 - z * z), 2) + '}\\approx-' + fmt(Math.PI * z / Math.sqrt(1 - z * z), 2) + '$.'], aid: 'Repères : $\\zeta=0{,}3\\Rightarrow37\\ \\%$ ; $\\zeta=0{,}5\\Rightarrow16\\ \\%$ ; $\\zeta=0{,}7\\Rightarrow5\\ \\%$.', bad: [100 * z, 100 * (1 - z), val * 2] };
+    return { text: 'Un système du second ordre a un coefficient d\'amortissement $\\xi=' + d(z) + '$. Quel est son premier dépassement relatif $D_1=100\\,e^{-\\pi\\xi/\\sqrt{1-\\xi^2}}$ ?', val, sig: 2, unit: '%',
+      steps: ['Méthode : retenir quelques valeurs : $\\xi=0{,}3\\Rightarrow37\\ \\%$ ; $\\xi=0{,}5\\Rightarrow16\\ \\%$ ; $\\xi=0{,}7\\Rightarrow5\\ \\%$.', 'Ici, $\\xi=' + d(z) + '$ : $D_1\\approx' + fmt(D2[z], 2) + '\\ \\%$.', 'Contrôle : $\\sqrt{1-' + d(z) + '^2}\\approx' + fmt(Math.sqrt(1 - z * z), 2) + '$, donc l\'exposant vaut $-\\dfrac{3{,}14\\times' + d(z) + '}{' + fmt(Math.sqrt(1 - z * z), 2) + '}\\approx-' + fmt(Math.PI * z / Math.sqrt(1 - z * z), 2) + '$.'], aid: 'Repères : $\\xi=0{,}3\\Rightarrow37\\ \\%$ ; $\\xi=0{,}5\\Rightarrow16\\ \\%$ ; $\\xi=0{,}7\\Rightarrow5\\ \\%$.', bad: [100 * z, 100 * (1 - z), val * 2] };
   }
   function tQdb() {
     const z = pick([0.05, 0.1, 0.125, 0.25]); const Q = 1 / (2 * z); const val = 20 * Math.log10(Q);
-    return { text: 'Un système du second ordre faiblement amorti ($\\zeta=' + d(z) + '$) présente un facteur de résonance $Q\\approx\\dfrac{1}{2\\zeta}$. Quelle est la valeur de $Q$ en décibels, $20\\log_{10}Q$ ?', val, sig: 2, unit: 'dB',
-      steps: ['Méthode : calculer $Q=\\dfrac{1}{2\\zeta}=\\dfrac{1}{' + d(2 * z) + '}=' + d(Q) + '$, puis convertir en décibels.', '$20\\log_{10}' + d(Q) + '\\approx' + fmt(val, 2) + '$ dB.'], aid: aidDb, bad: [Q, val / 2, -val] };
+    return { text: 'Un système du second ordre faiblement amorti ($\\xi=' + d(z) + '$) présente un facteur de résonance $Q\\approx\\dfrac{1}{2\\xi}$. Quelle est la valeur de $Q$ en décibels, $20\\log_{10}Q$ ?', val, sig: 2, unit: 'dB',
+      steps: ['Méthode : calculer $Q=\\dfrac{1}{2\\xi}=\\dfrac{1}{' + d(2 * z) + '}=' + d(Q) + '$, puis convertir en décibels.', '$20\\log_{10}' + d(Q) + '\\approx' + fmt(val, 2) + '$ dB.'], aid: aidDb, bad: [Q, val / 2, -val] };
   }
   function tTraction() {
     if (R.rand() < 0.5) {
@@ -2690,6 +2693,704 @@ ul.quant li { margin: 3px 0; }
   const api = { FAM, FAMILIES, GROUPS, generateSet, fmt, build, TOL, FAR };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.NumApp = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+// Schémas blocs : chaîne directe avec comparateur, retour par capteur, blocs avant et après la boucle.
+// Même style que les figures de calcul : traits et textes en variables CSS, flèches pleines.
+(function (root) {
+  'use strict';
+  const f1 = (x) => Math.round(x * 10) / 10;
+  const FG = 'var(--fig-fg)', MU = 'var(--fig-muted)';
+  const SERIF = '\'Times New Roman\',Georgia,serif';
+  const FS = 15, BH = 50, G = 26;
+
+  // petit convertisseur du TeX des blocs vers des <tspan> : lettres en italique, indices et exposants
+  function rich(tex) {
+    let s = tex.replace(/\\left\(/g, '(').replace(/\\right\)/g, ')').replace(/\{,\}/g, ',').replace(/\\tau/g, 'τ').replace(/\\xi/g, 'ξ').replace(/\\omega/g, 'ω').replace(/\\times/g, '×');
+    let out = '', w = 0, reset = 0, i = 0;
+    const emit = (txt, italic, dy, size, ww) => {
+      const d = (dy || 0) + reset; reset = 0;
+      out += '<tspan' + (d ? ' dy="' + d + '"' : '') + (size ? ' font-size="' + size + '"' : '') + ' font-style="' + (italic ? 'italic' : 'normal') + '">' + txt + '</tspan>';
+      w += ww;
+    };
+    while (i < s.length) {
+      const ch = s[i];
+      if ((ch === '_' || ch === '^') && s[i + 1] === '{') {
+        const j = s.indexOf('}', i); const body = s.slice(i + 2, j); const sub = ch === '_';
+        emit(body, /[A-Za-zτξω]/.test(body), sub ? 4 : -6, 10.5, body.length * 5.6); reset = sub ? -4 : 6; i = j + 1; continue;
+      }
+      if (ch === '+') { emit(' + ', false, 0, 0, 11); i++; continue; }
+      if (ch === '-') { emit(' − ', false, 0, 0, 11); i++; continue; }
+      const it = /[A-Za-zτξω]/.test(ch);
+      emit(ch === '<' ? '&lt;' : ch === '&' ? '&amp;' : ch, it, 0, 0, ch === ',' || ch === '(' || ch === ')' ? 4.6 : 8);
+      i++;
+    }
+    return { svg: out, w };
+  }
+  function arrow(x1, y1, x2, y2) {
+    const a = Math.atan2(y2 - y1, x2 - x1), h = 8, wd = 3.4;
+    const bx = x2 - h * Math.cos(a), by = y2 - h * Math.sin(a), px = -Math.sin(a) * wd, py = Math.cos(a) * wd;
+    return '<line x1="' + f1(x1) + '" y1="' + f1(y1) + '" x2="' + f1(bx) + '" y2="' + f1(by) + '" stroke="' + FG + '" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<polygon points="' + f1(x2) + ',' + f1(y2) + ' ' + f1(bx + px) + ',' + f1(by + py) + ' ' + f1(bx - px) + ',' + f1(by - py) + '" fill="' + FG + '"/>';
+  }
+  const line = (x1, y1, x2, y2) => '<line x1="' + f1(x1) + '" y1="' + f1(y1) + '" x2="' + f1(x2) + '" y2="' + f1(y2) + '" stroke="' + FG + '" stroke-width="1.6" stroke-linecap="round"/>';
+  const text = (x, y, inner, anchor) => '<text x="' + f1(x) + '" y="' + f1(y) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="' + FS + '" text-anchor="' + (anchor || 'middle') + '">' + inner + '</text>';
+
+  function blockW(b) {
+    const n = rich(b.numTex).w, d = b.denTex ? rich(b.denTex).w : 0;
+    return Math.max(44, Math.max(n, d) + 18);
+  }
+  function drawBlock(b, x, cy, w) {
+    const bw = w || blockW(b); const cx = x + bw / 2;
+    let h = '<rect x="' + f1(x) + '" y="' + f1(cy - BH / 2) + '" width="' + f1(bw) + '" height="' + BH + '" rx="3" fill="var(--fig-bg)" stroke="' + FG + '" stroke-width="1.6"/>';
+    const nm = rich(b.numTex);
+    if (!b.denTex) h += text(cx, cy + 5, nm.svg);
+    else {
+      const dn = rich(b.denTex);
+      h += text(cx, cy - 6, nm.svg) + '<line x1="' + f1(cx - Math.max(nm.w, dn.w) / 2 - 2) + '" y1="' + f1(cy + 1) + '" x2="' + f1(cx + Math.max(nm.w, dn.w) / 2 + 2) + '" y2="' + f1(cy + 1) + '" stroke="' + FG + '" stroke-width="1.2"/>' + text(cx, cy + 17, dn.svg);
+    }
+    return { svg: h, w: bw };
+  }
+
+  function draw(s) {
+    const y0 = 52; const hasFb = s.fb.length > 0; const yfb = y0 + (hasFb ? 74 : 56);
+    let x = 8; let h = '';
+    const L = (label) => { const r = rich(label); return r; };
+    // entrée
+    const eW = 34; h += text(x, y0 - 10, '<tspan font-style="italic">E</tspan>(<tspan font-style="italic">p</tspan>)', 'start');
+    let prev = x + eW - 4;
+    const seg = []; // éléments rangés dans l'ordre
+    s.pre.forEach((b) => seg.push({ t: 'b', b }));
+    seg.push({ t: 'c' });
+    s.direct.forEach((b) => seg.push({ t: 'b', b }));
+    s.post.forEach((b) => seg.push({ t: 'b', b, post: true }));
+    let xc = 0, xtap = 0; let lastDirectEnd = 0; const sensors = [];
+    let k = 0; const nDirect = s.direct.length; let directSeen = 0;
+    seg.forEach((e, idx) => {
+      const gap = G;
+      if (e.t === 'c') {
+        const R = 18; const cx = prev + gap + R; h += arrow(prev, y0, cx - R, y0);
+        const d = R * Math.SQRT1_2;
+        h += '<circle cx="' + f1(cx) + '" cy="' + y0 + '" r="' + R + '" fill="var(--fig-bg)" stroke="' + FG + '" stroke-width="1.6"/>';
+        h += '<line x1="' + f1(cx - d) + '" y1="' + f1(y0 - d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 + d) + '" stroke="' + FG + '" stroke-width="1.3"/><line x1="' + f1(cx - d) + '" y1="' + f1(y0 + d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 - d) + '" stroke="' + FG + '" stroke-width="1.3"/>';
+        h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 + 14) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="16" font-weight="bold" text-anchor="middle">−</text>';
+        xc = cx; prev = cx + R; return;
+      }
+      const bw = blockW(e.b); let bx = prev + gap;
+      if (e.post && directSeen === nDirect && !xtap) { bx = prev + G + 14; }  // place pour la prise de sortie
+      h += arrow(prev, y0, bx, y0); const bl = drawBlock(e.b, bx, y0, bw); h += bl.svg;
+      if (!e.post && !s.pre.includes(e.b)) { directSeen++; if (directSeen === nDirect) lastDirectEnd = bx + bw; }
+      prev = bx + bw;
+    });
+    // sortie
+    const outStart = prev; const hasPost = s.post.length > 0;
+    let xs;
+    if (hasPost) {
+      xtap = lastDirectEnd + (G + 14) / 2;
+    } else { xtap = prev + (G + 20) / 2 + 2; }
+    const sx = hasPost ? prev + G + 2 : prev + G + 22;
+    h += arrow(prev, y0, sx, y0);
+    h += text(sx + 2, y0 - 10, '<tspan font-style="italic">S</tspan>(<tspan font-style="italic">p</tspan>)', 'start');
+    const W = sx + 44;
+    // retour
+    h += '<circle cx="' + f1(xtap) + '" cy="' + y0 + '" r="3.2" fill="' + FG + '"/>';
+    h += line(xtap, y0, xtap, yfb);
+    if (hasFb) {
+      const fb = s.fb[0]; const fw = blockW(fb); const fx = (xc + xtap) / 2 - fw / 2;
+      h += line(xtap, yfb, fx + fw, yfb);
+      const bl = drawBlock(fb, fx, yfb, fw); h += bl.svg;
+      h += line(fx, yfb, xc, yfb);
+    } else h += line(xtap, yfb, xc, yfb);
+    h += arrow(xc, yfb, xc, y0 + 18);
+    const H = yfb + (hasFb ? BH / 2 + 8 : 14);
+    return '<svg viewBox="0 0 ' + Math.round(W) + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma bloc à identifier" style="background:var(--fig-bg);border-radius:8px;width:100%;min-width:' + Math.round(W * 0.78) + 'px">' + h + '</svg>';
+  }
+  const api = { draw, rich };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.BlockFigs = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+;
+// Forme canonique des SLCI : schémas blocs à boucle de retour, formule de Black, simplification, identification.
+// Calcul exact : coefficients rationnels (BigInt) et paramètres littéraux (polynômes multivariés), sans approximation.
+(function (root) {
+  'use strict';
+  const QM = root.Questions || require('./questions.js');
+  const { pick, shuffle, randint, R } = QM.util;
+
+  const FAM = {
+    s_ft: 'Fonction de transfert d\'un schéma bloc',
+    s_lit: 'Fonction de transfert littérale',
+    s_frac: 'Fractions de fractions',
+    s_ident: 'Ordre, classe et paramètres',
+  };
+
+  // ======================= Fractions exactes =======================
+  const gcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) { [a, b] = [b, a % b]; } return a; };
+  class Fr {
+    constructor(n, d) { n = BigInt(n); d = d === undefined ? 1n : BigInt(d); if (d < 0n) { n = -n; d = -d; } const g = gcd(n, d) || 1n; this.n = n / g; this.d = d / g; }
+    static dec(x) {
+      const s = String(x); const m = s.match(/^(-?)(\d+)(?:\.(\d+))?$/); if (!m) throw new Error('décimal invalide ' + s);
+      const f = m[3] || ''; return new Fr((m[1] ? -1n : 1n) * BigInt(m[2] + f), 10n ** BigInt(f.length));
+    }
+    add(o) { return new Fr(this.n * o.d + o.n * this.d, this.d * o.d); }
+    sub(o) { return new Fr(this.n * o.d - o.n * this.d, this.d * o.d); }
+    mul(o) { return new Fr(this.n * o.n, this.d * o.d); }
+    div(o) { return new Fr(this.n * o.d, this.d * o.n); }
+    neg() { return new Fr(-this.n, this.d); }
+    isZero() { return this.n === 0n; }
+    eq(o) { return this.n === o.n && this.d === o.d; }
+    num() { return Number(this.n) / Number(this.d); }
+    decStr(maxDec) {
+      maxDec = maxDec === undefined ? 4 : maxDec; const d = this.d; let k = 0;
+      let t = d; while (t % 2n === 0n) t /= 2n; while (t % 5n === 0n) t /= 5n; if (t !== 1n) return null;
+      let m = 1n; while (m % d !== 0n) { m *= 10n; k++; if (k > maxDec) return null; }
+      const scaled = this.n * (m / d); const neg = scaled < 0n; let s = (neg ? -scaled : scaled).toString();
+      if (k > 0) { s = s.padStart(k + 1, '0'); s = s.slice(0, -k) + '.' + s.slice(-k); }
+      return (neg ? '-' : '') + s;
+    }
+  }
+  const F0 = new Fr(0), F1 = new Fr(1);
+  const dec = (f, md) => { const s = f.decStr(md === undefined ? 4 : md); if (s === null) throw new Error('coefficient non décimal'); return s.replace('.', '{,}'); };
+
+  // ======================= Polynômes multivariés en les paramètres (MP) =======================
+  // un MP est un objet { clé de monôme : Fr } ; clé = "K_{1}^1|\\tau_{1}^2" ; '' pour la constante
+  const VARORDER = ['K_{1}', 'K_{2}', 'K_{3}', 'K_{4}', 'K_{c}', '\\tau_{1}', '\\tau_{2}', '\\tau_{3}', '\\tau_{c}'];
+  const vIdx = (v) => { const i = VARORDER.indexOf(v); return i < 0 ? 100 + (v.charCodeAt(0) || 0) : i; };
+  const varCmp = (a, b) => vIdx(a) - vIdx(b);
+  const parseKey = (k) => { const o = {}; if (k === '') return o; k.split('|').forEach((s) => { const i = s.lastIndexOf('^'); o[s.slice(0, i)] = +s.slice(i + 1); }); return o; };
+  const keyOf = (o) => Object.keys(o).filter((v) => o[v] !== 0).sort(varCmp).map((v) => v + '^' + o[v]).join('|');
+  const degOf = (o) => Object.keys(o).reduce((s, v) => s + o[v], 0);
+  const mpConst = (f) => (f.isZero() ? {} : { '': f });
+  const mpVar = (n) => { const o = {}; o[n + '^1'] = F1; return o; };
+  const mpOne = mpConst(F1);
+  const mpIsZero = (a) => Object.keys(a).length === 0;
+  const mpIsConst = (a) => Object.keys(a).every((k) => k === '');
+  const mpConstVal = (a) => a[''] || F0;
+  const mpAdd = (a, b) => { const r = Object.assign({}, a); for (const k in b) { r[k] = (r[k] || F0).add(b[k]); if (r[k].isZero()) delete r[k]; } return r; };
+  const mpSub = (a, b) => { const r = Object.assign({}, a); for (const k in b) { r[k] = (r[k] || F0).sub(b[k]); if (r[k].isZero()) delete r[k]; } return r; };
+  const mpMul = (a, b) => {
+    const r = {};
+    for (const ka in a) for (const kb in b) {
+      const o = parseKey(ka), p = parseKey(kb); for (const v in p) o[v] = (o[v] || 0) + p[v];
+      const k = keyOf(o); r[k] = (r[k] || F0).add(a[ka].mul(b[kb])); if (r[k].isZero()) delete r[k];
+    }
+    return r;
+  };
+  const mpScale = (a, f) => { const r = {}; for (const k in a) { const c = a[k].mul(f); if (!c.isZero()) r[k] = c; } return r; };
+  const mpEq = (a, b) => { const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => b[k] && a[k].eq(b[k])); };
+  const mpEv = (a, as) => { let s = 0; for (const k in a) { const o = parseKey(k); let t = a[k].num(); for (const v in o) t *= Math.pow(as[v], o[v]); s += t; } return s; };
+  const mpHasNeg = (a) => Object.keys(a).some((k) => a[k].n < 0n);
+  const mpVars = (a) => { const s = new Set(); Object.keys(a).forEach((k) => Object.keys(parseKey(k)).forEach((v) => s.add(v))); return s; };
+  const MPR = { zero: {}, one: mpOne, add: mpAdd, sub: mpSub, mul: mpMul, isZero: mpIsZero, eq: mpEq };
+  const FRR = { zero: F0, one: F1, add: (a, b) => a.add(b), sub: (a, b) => a.sub(b), mul: (a, b) => a.mul(b), isZero: (a) => a.isZero(), eq: (a, b) => a.eq(b) };
+
+  // ======================= Polynômes en p (coefficients croissants) sur un anneau =======================
+  function polyOps(ring) {
+    const { zero, add, sub, mul, isZero, eq } = ring;
+    const trim = (a) => { const r = a.slice(); while (r.length > 1 && isZero(r[r.length - 1])) r.pop(); return r; };
+    const self = {
+      trim,
+      deg: (a) => (a.length === 1 && isZero(a[0]) ? -1 : a.length - 1),
+      add: (a, b) => trim(Array.from({ length: Math.max(a.length, b.length) }, (_, i) => add(a[i] || zero, b[i] || zero))),
+      sub: (a, b) => trim(Array.from({ length: Math.max(a.length, b.length) }, (_, i) => sub(a[i] || zero, b[i] || zero))),
+      mul: (a, b) => { const r = Array.from({ length: a.length + b.length - 1 }, () => zero); a.forEach((x, i) => b.forEach((y, j) => { r[i + j] = add(r[i + j], mul(x, y)); })); return trim(r); },
+      eq: (a, b) => a.length === b.length && a.every((x, i) => eq(x, b[i])),
+      low: (a) => { let i = 0; while (i < a.length - 1 && isZero(a[i])) i++; return i; },
+      down: (a, k) => trim(a.slice(k)),
+    };
+    return self;
+  }
+  const PF = polyOps(FRR), PM = polyOps(MPR);
+  const pmConst = (f) => [mpConst(f)];
+  const PM1 = [mpOne];
+
+  // ======================= Écriture TeX =======================
+  const monoTeX = (o) => Object.keys(o).sort(varCmp).map((v) => v + (o[v] === 1 ? '' : '^{' + o[v] + '}')).join('');
+  function mpTerms(a) { return Object.keys(a).map((k) => ({ k, o: parseKey(k), c: a[k] })).sort((x, y) => (degOf(x.o) - degOf(y.o)) || (x.k < y.k ? -1 : x.k > y.k ? 1 : 0)); }
+  function termAbs(t) { const m = monoTeX(t.o); const ac = t.c.n < 0n ? t.c.neg() : t.c; if (m === '') return dec(ac); return (ac.eq(F1) ? '' : dec(ac)) + m; }
+  function mpTeX(a) {
+    const ts = mpTerms(a); if (!ts.length) return '0';
+    return ts.map((t, i) => (t.c.n < 0n ? '-' : i === 0 ? '' : '+') + termAbs(t)).join('');
+  }
+  function ptex(a, v) {
+    v = v || 'p'; let out = '';
+    a.forEach((c, i) => {
+      if (mpIsZero(c)) return;
+      if (i === 0) { out = mpTeX(c); return; }
+      const ts = mpTerms(c); const pw = i === 1 ? v : v + '^{' + i + '}';
+      let s, neg = false;
+      if (ts.length === 1) { neg = ts[0].c.n < 0n; const ab = termAbs(ts[0]); s = (ab === '1' ? '' : ab) + pw; } else s = '\\left(' + mpTeX(c) + '\\right)' + pw;
+      out = out === '' ? (neg ? '-' : '') + s : out + (neg ? '-' : '+') + s;
+    });
+    return out === '' ? '0' : out;
+  }
+  const nTerms = (a) => a.reduce((s, c) => s + Object.keys(c).length, 0);
+  const isP = (a) => a.length === 2 && mpIsZero(a[0]) && mpEq(a[1], mpOne);
+  const factorTeX = (a) => (isP(a) ? 'p' : nTerms(a) <= 1 ? ptex(a) : '\\left(' + ptex(a) + '\\right)');
+  // produit de morceaux TeX : \times entre deux nombres consécutifs
+  function prodTeX(parts) {
+    parts = parts.filter((s) => s !== '' && s !== '1'); if (!parts.length) return '1';
+    return parts.reduce((acc, s, i) => (i === 0 ? s : acc + (/^[0-9]/.test(s) ? '\\times' : '') + s), '');
+  }
+  const wrapSum = (s) => (/[+-]/.test(s.replace(/\\left\(.*?\\right\)/g, '')) ? '\\left(' + s + '\\right)' : s);
+  const mpFactor = (a) => (Object.keys(a).length > 1 ? '\\left(' + mpTeX(a) + '\\right)' : mpTeX(a));
+  const frac = (n, d) => (d === '1' || d === '' ? n : '\\dfrac{' + n + '}{' + d + '}');
+
+  // ======================= Blocs et fonctions de transfert =======================
+  const C = (x) => (typeof x === 'object' && !(x instanceof Fr) ? x : x instanceof Fr ? mpConst(x) : typeof x === 'string' && /^[A-Za-z\\]/.test(x) ? mpVar(x) : mpConst(Fr.dec(x)));
+  function mkBlk(kind, K, dfac, extra) {
+    const N = [C(K)]; const Dfac = dfac ? [PM.trim(dfac.map(C))] : [];
+    const b = Object.assign({ kind, N, Dfac }, extra || {});
+    b.numTex = mpTeX(N[0]); b.denTex = Dfac.length ? ptex(Dfac[0]) : '';
+    return b;
+  }
+  const gainB = (K) => mkBlk('gain', K, null, { spec: { kind: 'gain', K: String(K) } });
+  const t1B = (K, tau) => mkBlk('t1', K, [1, tau], { spec: { kind: 't1', K: String(K), tau: String(tau) } });
+  const intB = () => mkBlk('int', 1, [0, 1], { spec: { kind: 'int' } });
+  const t2B = (K, a1, a2, xi, w0) => mkBlk('t2', K, [1, a1, a2], { xi, w0, spec: { kind: 't2', K: String(K), a1: a1.decStr(6), a2: a2.decStr(6) } });
+  function seriesOf(bs) { let N = PM1, D = PM1; bs.forEach((b) => { N = PM.mul(N, b.N); b.Dfac.forEach((f) => { D = PM.mul(D, f); }); }); return { N, D }; }
+  const rfMul = (a, b) => ({ N: PM.mul(a.N, b.N), D: PM.mul(a.D, b.D) });
+  const UNIT = { N: PM1, D: PM1 };
+  function black(G, H, sign) { const num = PM.mul(G.N, H.D); const gh = PM.mul(G.N, H.N); const gd = PM.mul(G.D, H.D); return { N: num, D: sign > 0 ? PM.add(gd, gh) : PM.sub(gd, gh) }; }
+  // valeurs : l'ensemble { N, D } instancié en Fr à partir d'une affectation des paramètres
+  const instMP = (a, as) => { let r = F0; for (const k in a) { const o = parseKey(k); let t = a[k]; for (const v in o) for (let i = 0; i < o[v]; i++) t = t.mul(as[v]); r = r.add(t); } return r; };
+  const instPoly = (p, as) => PF.trim(p.map((c) => instMP(c, as)));
+  function polyMod(a, b) { a = a.slice(); const db = PF.deg(b); while (PF.deg(a) >= db && PF.deg(a) >= 0) { const k = a[a.length - 1].div(b[b.length - 1]); const sh = a.length - b.length; for (let i = 0; i < b.length; i++) a[i + sh] = a[i + sh].sub(b[i].mul(k)); a.pop(); if (!a.length) a = [F0]; a = PF.trim(a); if (PF.deg(a) < db) break; } return PF.trim(a); }
+  function gcdDeg(a, b) { while (PF.deg(b) >= 0) { const r = polyMod(a, b); a = b; b = r; } return PF.deg(a); }
+
+  // ======================= Rapports de polynômes en les paramètres =======================
+  function monoGcd(polys) { let m = null; polys.forEach((p) => Object.keys(p).forEach((k) => { const o = parseKey(k); if (m === null) m = Object.assign({}, o); else for (const v in m) m[v] = Math.min(m[v], o[v] || 0); })); return m || {}; }
+  function divMono(a, m) { const r = {}; for (const k in a) { const o = parseKey(k); for (const v in m) o[v] = (o[v] || 0) - m[v]; r[keyOf(o)] = a[k]; } return r; }
+  // simplification d'un rapport a/b de polynômes en les paramètres : facteurs monomiaux et constantes
+  function ratio(a, b) {
+    if (mpIsZero(a)) return { num: {}, den: mpOne };
+    const g = monoGcd([a, b]); a = divMono(a, g); b = divMono(b, g);
+    const bt = Object.keys(b);
+    if (bt.length === 1) { const kc = b[bt[0]]; a = mpScale(a, F1.div(kc)); b = { [bt[0]]: F1 }; }
+    if (mpIsConst(b)) { a = mpScale(a, F1.div(mpConstVal(b))); b = mpOne; }
+    return { num: a, den: b };
+  }
+  const ratioTeX = (r) => (mpEq(r.den, mpOne) ? mpTeX(r.num) : '\\dfrac{' + mpTeX(r.num) + '}{' + mpTeX(r.den) + '}');
+  const ratioEv = (r, as) => mpEv(r.num, as) / mpEv(r.den, as);
+  const ratioNeg = (r) => mpHasNeg(r.num) || mpHasNeg(r.den);
+
+  // forme canonique d'une fonction rationnelle { N, D } : K p^β (1+b1 p+…) / (p^α (1+a1 p+…))
+  function canon(rf) {
+    const al = PM.low(rf.D), be = PM.low(rf.N);
+    const Dp = PM.down(rf.D, al), Np = PM.down(rf.N, be);
+    const d0 = Dp[0], n0 = Np[0];
+    return {
+      alpha: al, beta: be, Dp, Np, d0, n0,
+      K: ratio(n0, d0),
+      a: Dp.map((c) => ratio(c, d0)),   // a[0] = 1
+      b: Np.map((c) => ratio(c, n0)),
+    };
+  }
+  const aTeX = (r, i) => { // terme a_i p^i d'un dénominateur canonique
+    const pw = i === 1 ? 'p' : 'p^{' + i + '}';
+    if (mpEq(r.den, mpOne)) { const s = Object.keys(r.num).length > 1 ? '\\left(' + mpTeX(r.num) + '\\right)' : mpTeX(r.num); return (s === '1' ? '' : s) + pw; }
+    return '\\dfrac{' + mpTeX(r.num) + '}{' + mpTeX(r.den) + '}' + pw;
+  };
+  function polyRatioTeX(rs) { // 1 + a1 p + a2 p^2 ...
+    let out = '1';
+    rs.forEach((r, i) => { if (i === 0 || mpIsZero(r.num)) return; const t = aTeX(r, i); out += (t[0] === '-' ? '' : '+') + t; });
+    return out;
+  }
+  function canonTeX(c) {
+    const Kt = ratioTeX(c.K);
+    const pre = c.beta ? (c.beta === 1 ? 'p' : 'p^{' + c.beta + '}') : '';
+    const bpoly = c.b.length > 1 ? '\\left(' + polyRatioTeX(c.b) + '\\right)' : '';
+    const num = (Kt === '1' && (pre || bpoly) ? '' : Kt) + pre + bpoly || '1';
+    const dp = polyRatioTeX(c.a); const dOne = c.a.length === 1;
+    let den;
+    if (c.alpha === 0) den = dp; else { const pw = c.alpha === 1 ? 'p' : 'p^{' + c.alpha + '}'; den = dOne ? pw : pw + '\\left(' + dp + '\\right)'; }
+    return '\\dfrac{' + num + '}{' + den + '}';
+  }
+  // évaluation numérique d'une forme canonique en p réel positif
+  function canonEv(c, p, as) {
+    const pp = (rs) => rs.reduce((s, r, i) => s + (i === 0 ? 1 : ratioEv(r, as)) * Math.pow(p, i), 0);
+    return ratioEv(c.K, as) * Math.pow(p, c.beta) * pp(c.b) / (Math.pow(p, c.alpha) * pp(c.a));
+  }
+  const rfEv = (rf, p, as) => {
+    const e = (a) => a.reduce((s, c, i) => s + mpEv(c, as) * Math.pow(p, i), 0);
+    return e(rf.N) / e(rf.D);
+  };
+
+  // ======================= Schémas =======================
+  // sch = { pre:[blocs], direct:[blocs], fb:[blocs], post:[blocs], lit }
+  function evalScheme(s, m) {
+    m = m || {};
+    const G = seriesOf(s.direct); const H = m.noSensor ? UNIT : seriesOf(s.fb);
+    let L = black(G, H, m.signFlip ? -1 : 1);
+    if (m.openLoop) L = { N: G.N, D: G.D };
+    if (m.numH) L = { N: PM.mul(G.N, H.N), D: L.D };
+    let T = L;
+    if (!m.dropPre) T = rfMul(seriesOf(s.pre), T);
+    if (!m.dropPost) T = rfMul(T, seriesOf(s.post));
+    return { G, H, L, T };
+  }
+  const orderOf = (rf) => PM.deg(rf.D);
+  const classOf = (rf) => PM.low(rf.D);
+
+  const rnd = () => R.rand();
+  function wpick(pairs) { let t = 0; pairs.forEach((p) => { t += p[1]; }); let x = rnd() * t; for (const p of pairs) { x -= p[1]; if (x < 0) return p[0]; } return pairs[0][0]; }
+
+  // construction aléatoire d'un schéma (descripteurs puis instanciation dans l'ordre de lecture)
+  function randomScheme(lit) {
+    const dirKinds = wpick([
+      [['gain'], 1], [['t1'], 3], [['t2'], lit ? 0 : 2], [['int'], 1], [['gain', 'int'], 1], [['t1', 'int'], 3], [['gain', 't1'], 2], [['t1', 't1'], 2], [['t1', 'gain'], 1], [['int', 't1'], 1], [['gain', 't1', 'int'], 1], [['t2', 'int'], lit ? 0 : 1],
+    ]);
+    const fbKind = wpick([[null, 3], ['gain', 5], ['t1', 1.2]]);
+    const pre = wpick([[null, 5], ['gain', 2.5], ['t1', 1], ['int', 0.6]]);
+    const post = wpick([[null, 4], ['gain', 1.8], ['int', 1.8], ['t1', 0.8]]);
+    let iK = 0, iT = 0;
+    const K = () => (lit ? 'K_{' + (++iK) + '}' : pick([2, 3, 4, 5, 10, 20, 0.5, 8, 1.5]));
+    const tau = () => (lit ? '\\tau_{' + (++iT) + '}' : pick(['0.1', '0.2', '0.5', '1', '2', '0.25', '0.4', '0.05']));
+    const mk = (k) => {
+      if (k === 'gain') return gainB(K());
+      if (k === 't1') { const unit = !lit && rnd() < 0.15; return t1B(unit ? 1 : K(), tau()); }
+      if (k === 'int') return intB();
+      const w0 = pick([2, 4, 5, 10]), xi = pick(['0.2', '0.25', '0.4', '0.5', '0.6', '0.8', '1', '1.5', '2']);
+      const a1 = Fr.dec(xi).mul(new Fr(2)).div(new Fr(w0)), a2 = F1.div(new Fr(w0 * w0));
+      return t2B(K(), a1, a2, xi, w0);
+    };
+    const preB = pre ? [mk(pre)] : []; const direct = dirKinds.map(mk); const postB = post ? [mk(post)] : [];
+    const fb = fbKind ? [fbKind === 'gain' ? gainB(lit ? 'K_{c}' : pick(['0.1', '0.2', '0.5', '2', '0.25', '0.4'])) : t1B(lit ? 'K_{c}' : pick(['0.5', '1', '2']), lit ? '\\tau_{c}' : pick(['0.1', '0.2', '0.5']))] : [];
+    return { pre: preB, direct, fb, post: postB, lit: !!lit };
+  }
+  function niceSecond(c) {
+    if (c.a.length !== 3 || c.alpha !== 0) return null;
+    const a1 = c.a[1].num, a2 = c.a[2].num; if (!mpIsConst(a1) || !mpIsConst(a2) || !mpEq(c.a[1].den, mpOne) || !mpEq(c.a[2].den, mpOne)) return null;
+    const A1 = mpConstVal(a1), A2 = mpConstVal(a2);
+    const rt = (f) => { const nn = Math.round(Math.sqrt(Number(f.n))), dd = Math.round(Math.sqrt(Number(f.d))); return nn * nn === Number(f.n) && dd * dd === Number(f.d) ? new Fr(nn, dd) : null; };
+    const w0 = rt(F1.div(A2)); if (!w0) return null;
+    const xi = A1.mul(w0).div(new Fr(2)); if (xi.decStr(2) === null || w0.decStr(1) === null) return null;
+    return { w0, xi };
+  }
+  function checkScheme(s) {
+    const lit = s.lit; const ev = evalScheme(s); const T = ev.T;
+    const od = orderOf(T), cl = classOf(T);
+    if (od < 1 || od > 3 || cl > 2) return null;
+    if (PM.deg(T.N) > 1 || PM.deg(T.N) >= od) return null;
+    if (mpIsZero(T.N[0])) return null;
+    const c = canon(T); if (c.beta !== 0) return null;
+    if (c.a.some(ratioNeg) || c.b.some(ratioNeg) || ratioNeg(c.K)) return null;
+    let sec = null;
+    if (!lit) {
+      // coefficients : décimaux finis, courts et de taille raisonnable
+      const okc = (r) => { const x = mpConstVal(r.num); const s = x.decStr(3); return s !== null && (x.isZero() || (Math.abs(x.num()) >= 0.001 && Math.abs(x.num()) <= 1000)); };
+      if (!okc(c.K) || c.a.slice(1).some((r) => !okc(r)) || c.b.slice(1).some((r) => !okc(r))) return null;
+      if (od === 2 && cl === 0) { sec = niceSecond(c); if (!sec) return null; }
+    }
+    // pas de simplification cachée : instanciation aléatoire exacte
+    const vars = new Set(); [T.N, T.D].forEach((p) => p.forEach((q) => mpVars(q).forEach((v) => vars.add(v))));
+    const as = {}; vars.forEach((v) => { as[v] = new Fr(randint(2, 9), randint(2, 7)); });
+    if (gcdDeg(instPoly(T.D, as), instPoly(T.N, as)) > 0) return null;
+    if (vars.size > 6) return null;
+    try { ptex(T.N); ptex(T.D); canonTeX(c); } catch (e) { return null; }
+    return { ev, T, c, sec, order: od, cls: cl };
+  }
+  function makeScheme(lit, need) {
+    for (let k = 0; k < 6000; k++) {
+      const s = randomScheme(lit); const a = checkScheme(s); if (!a) continue;
+      if (need && !need(a)) continue;
+      return Object.assign({ s }, a);
+    }
+    throw new Error('aucun schéma valide');
+  }
+
+  // ======================= Écriture des chaînes de blocs =======================
+  function dfDisplay(dfs, forceParen) {
+    let pk = 0; const other = [];
+    dfs.forEach((f) => { if (isP(f)) pk++; else other.push(f); });
+    if (pk === 0 && other.length === 1 && !forceParen) return ptex(other[0]);
+    const parts = []; if (pk) parts.push(pk === 1 ? 'p' : 'p^{' + pk + '}');
+    return parts.concat(other.map(factorTeX)).join('') || '1';
+  }
+  const chainNum = (bs) => bs.reduce((m, b) => mpMul(m, b.N[0]), mpOne);
+  const chainDfs = (bs) => bs.reduce((l, b) => l.concat(b.Dfac), []);
+  const chainTeX = (bs) => frac(mpTeX(chainNum(bs)), dfDisplay(chainDfs(bs)));
+  const mpPart = (a) => { const t = mpTeX(a); return t === '1' ? '' : (Object.keys(a).length > 1 ? '\\left(' + t + '\\right)' : t); };
+
+  // ======================= Correction détaillée =======================
+  function explain(s, E, o) {
+    o = o || {};
+    const { T, c } = E; const lit = s.lit; const steps = [];
+    const hasFb = s.fb.length > 0, hasPre = s.pre.length > 0, hasPost = s.post.length > 0;
+    const G = s.direct, H = s.fb;
+    const gTeX = chainTeX(G), hTeX = hasFb ? chainTeX(H) : '1';
+    const nG = chainNum(G), nH = chainNum(H), dG = chainDfs(G), dH = chainDfs(H);
+    const dGt = dfDisplay(dG), dHt = dfDisplay(dH);
+    const gains = (bs) => bs.filter((b) => b.kind !== 'int').map((b) => mpTeX(b.N[0])).filter((t) => t !== '1');
+    const prodNote = (bs) => { const g = bs.map((b) => mpTeX(b.N[0])).filter((t) => t !== '1'); return !lit && g.length > 1 ? ' ; les numérateurs constants se multiplient : $' + g.join(lit ? '' : '\\times') + '=' + mpTeX(chainNum(bs)) + '$' : ''; };
+
+    // 1. Structure
+    const l1 = ['**Repérer la structure du schéma.** Les blocs en série se multiplient. La boucle est à retour négatif (comparateur avec le signe moins sur le retour).'];
+    if (hasPre) l1.push('Bloc avant la boucle : $A(p)=' + chainTeX(s.pre) + '$.');
+    l1.push('Chaîne directe de la boucle : $G(p)=' + gTeX + '$' + prodNote(G) + '.');
+    l1.push(hasFb ? 'Chaîne de retour : $H_r(p)=' + hTeX + '$.' : 'Retour unitaire : $H_r(p)=1$.');
+    if (hasPost) l1.push('Bloc après la boucle : $B(p)=' + chainTeX(s.post) + '$.');
+    steps.push(l1[0] + '\n- ' + l1.slice(1).join('\n- '));
+
+    // 2. Black
+    const ghTeX = (hasFb ? hTeX + '\\times' : '') + gTeX;
+    steps.push('**Formule de Black** appliquée à la boucle : $H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}$. Remplacement :\n$$H_{BF}(p)=\\dfrac{' + gTeX + '}{1+' + ghTeX + '}$$');
+
+    // 3. Fractions de fractions
+    const numFac = prodTeX([mpPart(nG)].concat(dH.length ? [dfDisplay(dH, mpPart(nG) !== '')] : []));
+    const dAll = dfDisplay(dG.concat(dH));
+    const denProd = dAll;
+    const denRet = prodTeX([mpPart(nH), mpPart(nG)]);
+    const denStr = (denProd === '1' ? '1' : denProd) + '+' + (denRet === '1' ? '1' : denRet);
+    const mulBy = dAll;
+    const step3 = '**Supprimer la fraction de fractions** : multiplier le numérateur et le dénominateur de la grande fraction par ' + (mulBy === '1' ? 'une quantité égale à 1 (aucun dénominateur à éliminer dans ce cas)' : '$' + mulBy + '$, produit des dénominateurs de $G$ et de $H_r$') + '. Chaque petite fraction disparaît et il reste un seul trait de fraction :\n$$H_{BF}(p)=\\dfrac{' + (numFac === '1' ? '1' : numFac) + '}{' + denStr + '}$$';
+    steps.push(step3);
+
+    // 4. Développement
+    const NL = PM.mul(seriesOf(G).N, seriesOf(H).D); const DL = E.ev.L.D;
+    steps.push('**Développer** et ranger les polynômes par puissances croissantes de $p$ :\n' + ((numFac === ptex(NL)) ? '' : '- numérateur : $' + numFac + '=' + ptex(NL) + '$ ;\n') + '- dénominateur : $' + denStr + '=' + ptex(DL) + '$.\n$$H_{BF}(p)=\\dfrac{' + ptex(NL) + '}{' + ptex(DL) + '}$$');
+
+    if (o.stopAfterLoop) return steps;
+    // 5. Blocs extérieurs
+    let curN = NL, curD = DL;
+    if (hasPre || hasPost) {
+      const nums = [], dens = [];
+      if (hasPre) { nums.push(mpPart(chainNum(s.pre))); }
+      const nlPlain = ptex(NL), nlPar = nTerms(NL) <= 1 ? nlPlain : '\\left(' + nlPlain + '\\right)';
+      if (hasPost) nums.push(mpPart(chainNum(s.post)));
+      const dfs = (hasPre ? chainDfs(s.pre) : []).concat([DL]).concat(hasPost ? chainDfs(s.post) : []);
+      const dtex = dfDisplay(dfs);
+      const others = nums.filter((t) => t !== '' && t !== '1'); const prodNums = others.length ? prodTeX([others[0]].concat(others.slice(1)).concat([nlPar])) : nlPlain;
+      const parts = []; if (hasPre) parts.push('A(p)'); parts.push('H_{BF}(p)'); if (hasPost) parts.push('B(p)');
+      const full = (hasPre ? chainTeX(s.pre) + '\\times' : '') + '\\dfrac{' + ptex(NL) + '}{' + ptex(DL) + '}' + (hasPost ? '\\times' + chainTeX(s.post) : '');
+      steps.push('**Blocs situés hors de la boucle** : ils se multiplient avec la fonction de transfert en boucle fermée, $H(p)=' + parts.join('\\,') + '$ :\n$$H(p)=' + full + '=\\dfrac{' + prodNums + '}{' + dtex + '}$$');
+      curN = T.N; curD = T.D;
+      steps.push('**Développer** de nouveau pour retrouver un seul polynôme au numérateur et un seul au dénominateur :\n$$H(p)=\\dfrac{' + ptex(curN) + '}{' + ptex(curD) + '}$$');
+    }
+
+    // 6. Normalisation
+    const al = c.alpha;
+    const hd = [];
+    let lead;
+    if (al > 0) {
+      const inner = ptex(c.Dp);
+      lead = 'Le dénominateur ne comporte pas de terme constant : factoriser $p' + (al > 1 ? '^{' + al + '}' : '') + '$ :\n$$H(p)=\\dfrac{' + ptex(curN) + '}{p' + (al > 1 ? '^{' + al + '}' : '') + '\\left(' + inner + '\\right)}$$\n';
+    } else lead = '';
+    const d0t = mpTeX(c.d0), n0t = mpTeX(c.n0);
+    const rawNumer = frac(n0t, d0t) ;
+    const rawK = '\\dfrac{' + n0t + '}{' + d0t + '}';
+    const rawPoly = (arr, base) => { let out = '1'; arr.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+' + (mpEq(base, mpOne) ? '' : '\\dfrac{' + mpTeX(q) + '}{' + mpTeX(base) + '}') + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; };
+    const rawDen = rawPoly(c.Dp.map((q, i) => (i === 0 ? mpOne : q)), c.d0);
+    const rawDenFix = (() => { let out = '1'; c.Dp.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + d0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; })();
+    const rawNum2 = c.Np.length > 1 ? (() => { let out = '1'; c.Np.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + n0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return '\\left(' + out + '\\right)'; })() : '';
+    const pw = al === 0 ? '' : al === 1 ? 'p' : 'p^{' + al + '}';
+    const rawDenAll = al === 0 ? rawDenFix : pw + '\\left(' + rawDenFix + '\\right)';
+    const rawHtex = '\\dfrac{' + rawK + rawNum2 + '}{' + rawDenAll + '}';
+    if (lead) steps.push(lead.trim());
+    steps.push('**Mettre sous forme canonique** : le terme de plus bas degré non nul du dénominateur doit valoir $1$. Diviser le numérateur et le dénominateur par ce terme, ici $d_0=' + d0t + '$' + (c.Np.length > 1 ? ', et mettre aussi le numérateur sous la forme $K(1+\\dots)$ en divisant par son terme constant $n_0=' + n0t + '$' : '') + '. Le gain devient $K=\\dfrac{' + n0t + '}{' + d0t + '}$ :\n$$H(p)=' + rawHtex + '$$\nsoit, après simplification des fractions :\n$$H(p)=' + canonTeX(c) + '$$');
+
+    // 7. Identification
+    const od = E.order, cl = E.cls;
+    const Kt = ratioTeX(c.K);
+    const id = ['**Identifier** : ordre $' + od + '$ (degré du dénominateur), classe $' + cl + '$ (' + (cl === 0 ? 'aucun pôle nul, donc aucun terme $p$ en facteur' : 'puissance de $p$ mise en facteur du dénominateur') + '), gain ' + (cl === 0 ? 'statique ' : '') + '$K=' + Kt + '$' + (lit ? '.' : '.')];
+    const quad = (c2, intro) => {
+      const w = omegaXi(c2);
+      return intro + 'Identification des termes en $p$ et en $p^{2}$ :\n$$\\dfrac{2\\xi}{\\omega_0}=' + ratioTeX(c2.a[1]) + '\\qquad\\dfrac{1}{\\omega_0^{2}}=' + ratioTeX(c2.a[2]) + '$$\n$$\\omega_0=' + w.w0Tex + '\\qquad\\xi=\\dfrac{\\omega_0}{2}\\times' + (mpEq(c2.a[1].den, mpOne) ? mpFactor(c2.a[1].num) : '\\left(' + ratioTeX(c2.a[1]) + '\\right)') + '=' + w.xiTex + '$$';
+    };
+    const SEC = '$1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}$';
+    if (od - cl === 1 && cl === 0) id.push('Premier ordre : forme $\\dfrac{K}{1+\\tau p}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
+    else if (od === 2 && cl === 0) id.push(quad(c, 'Second ordre : forme canonique $\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}}$. '));
+    else if (od - cl === 1) id.push((cl === 1 ? 'Un intégrateur' : 'Deux intégrateurs') + ' : forme canonique $\\dfrac{K}{' + (cl === 1 ? 'p' : 'p^{' + cl + '}') + '\\left(1+\\tau p\\right)}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
+    else if (od - cl === 2) id.push(quad(c, 'Le facteur du dénominateur est du second ordre, de la forme ' + SEC + '. '));
+    else id.push('Troisième ordre sans intégrateur : pas de paramètres $\\xi$ et $\\omega_0$ à identifier.');
+    steps.push(id[0] + (id.length > 1 ? '\n' + id.slice(1).join('\n') : ''));
+    return steps;
+  }
+  // ω0 et ξ d'un dénominateur 1 + a1 p + a2 p², formules exactes
+  function omegaXi(c) {
+    const lit = !(mpIsConst(c.a[1].num) && mpIsConst(c.a[2].num) && mpEq(c.a[1].den, mpOne) && mpEq(c.a[2].den, mpOne));
+    if (!lit) {
+      const A1 = mpConstVal(c.a[1].num), A2 = mpConstVal(c.a[2].num);
+      const rt = (f) => { const nn = Math.round(Math.sqrt(Number(f.n))), dd = Math.round(Math.sqrt(Number(f.d))); return nn * nn === Number(f.n) && dd * dd === Number(f.d) ? new Fr(nn, dd) : null; };
+      const w0 = rt(F1.div(A2)); if (w0) { const xi = A1.mul(w0).div(new Fr(2)); return { w0Tex: dec(w0, 3), xiTex: dec(xi, 3), w0, xi }; }
+    }
+    // cas littéral ou non carré parfait : ω0 = √(d0/D2), ξ = D1 / (2 √(d0 D2))
+    const d0 = c.d0, D1 = c.Dp[1], D2 = c.Dp[2];
+    const r = ratio(d0, D2);
+    const sq = (x) => (mpEq(x, mpOne) ? '1' : '\\sqrt{' + x + '}');
+    return { w0Tex: '\\sqrt{' + ratioTeX(r) + '}', xiTex: '\\dfrac{' + mpTeX(D1) + '}{2\\sqrt{' + prodTeX([mpFactor(d0), mpFactor(D2)]) + '}}' };
+  }
+
+
+  // ======================= Questions =======================
+  const BF = root.BlockFigs || (typeof require === 'function' ? require('./blockfigs.js') : null);
+  const specOf = (s) => ({ lit: s.lit, pre: s.pre.map((b) => b.spec), direct: s.direct.map((b) => b.spec), fb: s.fb.map((b) => b.spec), post: s.post.map((b) => b.spec) });
+  const SAMP = [0.37, 1.3, 2.9];
+  const rndAssign = (vars) => { const as = {}; vars.forEach((v) => { as[v] = 0.5 + rnd() * 3; }); return as; };
+  function allVars(cs) { const set = new Set(); cs.forEach((c) => [c.K].concat(c.a, c.b).forEach((r) => { mpVars(r.num).forEach((v) => set.add(v)); mpVars(r.den).forEach((v) => set.add(v)); })); return Array.from(set); }
+  const sameVal = (c1, c2, as) => SAMP.every((p) => { const a = canonEv(c1, p, as), b = canonEv(c2, p, as); return Math.abs(a - b) <= 1e-7 * Math.max(1, Math.abs(a), Math.abs(b)); });
+  const cloneC = (c) => Object.assign({}, c, { a: c.a.slice(), b: c.b.slice() });
+  const R1 = { num: mpOne, den: mpOne };
+
+  function wrongCanons(s, E) {
+    const c = E.c, cands = [], hasFb = s.fb.length > 0;
+    [['noSensor', hasFb], ['signFlip', true], ['openLoop', hasFb], ['numH', hasFb], ['dropPre', s.pre.length], ['dropPost', s.post.length]].forEach(([k, ok]) => {
+      if (!ok) return;
+      try { const T = evalScheme(s, { [k]: true }).T; if (PM.deg(T.D) < 0 || mpIsZero(T.N[0]) || mpIsZero(T.D[PM.low(T.D)])) return; const cc = canon(T); if (cc.beta === 0) cands.push(cc); } catch (e) { /* ignoré */ }
+    });
+    const d0 = c.d0, n0 = c.n0; let m;
+    if (!mpEq(d0, mpOne)) {
+      m = cloneC(c); m.K = ratio(n0, mpOne); cands.push(m);
+      m = cloneC(c); m.a = c.Dp.map((q, i) => (i === 0 ? R1 : ratio(q, mpOne))); cands.push(m);
+      m = cloneC(c); m.K = ratio(mpMul(n0, d0), mpOne); cands.push(m);
+    }
+    m = cloneC(c); m.K = ratio(d0, n0); cands.push(m);
+    if (c.a.length > 1) { m = cloneC(c); m.a[1] = ratio(d0, c.Dp[1]); cands.push(m); }
+    if (c.a.length > 2) { m = cloneC(c); m.a[1] = c.a[2]; m.a[2] = c.a[1]; cands.push(m); }
+    if (!s.lit) {
+      const two = mpConst(new Fr(2)), half = mpConst(new Fr(1, 2));
+      m = cloneC(c); m.K = ratio(mpMul(c.K.num, two), c.K.den); cands.push(m);
+      m = cloneC(c); m.K = ratio(mpMul(c.K.num, half), c.K.den); cands.push(m);
+      if (c.a.length > 1) { m = cloneC(c); m.a[1] = ratio(mpMul(c.a[1].num, two), c.a[1].den); cands.push(m); m = cloneC(c); m.a[1] = ratio(mpMul(c.a[1].num, half), c.a[1].den); cands.push(m); }
+    }
+    return cands;
+  }
+  function pickWrong(s, E) {
+    const c = E.c; const cands = shuffle(wrongCanons(s, E));
+    const as = s.lit ? rndAssign(allVars([c].concat(cands))) : {};
+    const chosen = []; const seen = new Set([canonTeX(c)]);
+    for (const cd of cands) {
+      if (s.lit && (ratioNeg(cd.K) || cd.a.some(ratioNeg) || cd.b.some(ratioNeg))) continue;
+      let t; try { t = canonTeX(cd); } catch (e) { continue; }
+      if (seen.has(t) || sameVal(cd, c, as) || chosen.some((x) => sameVal(x.c, cd, as))) continue;
+      seen.add(t); chosen.push({ c: cd, tex: t }); if (chosen.length === 3) return chosen;
+    }
+    return null;
+  }
+  const baseQ = (fam, text) => ({ theme: 'slci', family: fam, famLabel: FAM[fam], text, math: null });
+  const HDEF = '$H(p)=\\dfrac{S(p)}{E(p)}$';
+  function qCanon(lit) {
+    for (let k = 0; k < 300; k++) {
+      const E = makeScheme(lit); const s = E.s; const wr = pickWrong(s, E); if (!wr) continue;
+      const all = shuffle([{ tex: canonTeX(E.c), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
+      return Object.assign(baseQ(lit ? 's_lit' : 's_ft', 'Déterminer la fonction de transfert ' + HDEF + ' du système représenté par le schéma bloc ci-dessous (sortie sur entrée), puis la mettre sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.')), {
+        choiceKind: 'math', choices: all.map((x) => x.tex), correctIndex: all.findIndex((x) => x.ok), steps: explain(s, E), block: BF ? BF.draw(s) : '', model: specOf(s),
+      });
+    }
+    throw new Error('qCanon');
+  }
+
+  // propositions pour l'identification de K, ω0 et ξ
+  function wxChoices(E, lit, as) {
+    const c = E.c;
+    if (!lit) {
+      const w0 = E.sec.w0, xi = E.sec.xi, K = mpConstVal(c.K.num), a1 = mpConstVal(c.a[1].num);
+      const n0 = mpConstVal(c.n0);
+      const Ks = [K].concat(n0.eq(K) ? [] : [n0]), Ws = [w0, F1.div(w0), w0.mul(w0)], Xs = [xi, a1.div(new Fr(2)), a1.mul(w0), xi.mul(new Fr(2))];
+      const mk = (k, w, x) => ({ k, w, x, tex: '$K=' + dec(k, 3) + ',\\ \\omega_0=' + dec(w, 3) + '\\ \\mathrm{rad/s},\\ \\xi=' + dec(x, 3) + '$' });
+      const out = []; Ks.forEach((k) => Ws.forEach((w) => Xs.forEach((x) => { try { out.push(Object.assign(mk(k, w, x), { ok: k.eq(K) && w.eq(w0) && x.eq(xi) })); } catch (e) { /* non décimal */ } })));
+      return out;
+    }
+    const d0 = c.d0, D1 = c.Dp[1], D2 = c.Dp[2];
+    const r = ratio(d0, D2), ri = ratio(D2, d0);
+    const e = (m) => mpEv(m, as);
+    const W = [
+      { t: '\\sqrt{' + ratioTeX(r) + '}', v: Math.sqrt(e(d0) / e(D2)) },
+      { t: '\\sqrt{' + ratioTeX(ri) + '}', v: Math.sqrt(e(D2) / e(d0)) },
+      { t: ratioTeX(r), v: e(d0) / e(D2) },
+    ];
+    const pd = prodTeX([mpFactor(d0), mpFactor(D2)]);
+    const X = [
+      { t: '\\dfrac{' + mpTeX(D1) + '}{2\\sqrt{' + pd + '}}', v: e(D1) / (2 * Math.sqrt(e(d0) * e(D2))) },
+      { t: '\\dfrac{' + mpTeX(D1) + '}{\\sqrt{' + pd + '}}', v: e(D1) / Math.sqrt(e(d0) * e(D2)) },
+      { t: '\\dfrac{' + mpTeX(D1) + '}{2\\sqrt{' + mpFactor(D2) + '}}', v: e(D1) / (2 * Math.sqrt(e(D2))) },
+      { t: '\\dfrac{' + mpTeX(D1) + '}{2' + mpFactor(d0) + '}', v: e(D1) / (2 * e(d0)) },
+    ];
+    const out = []; W.forEach((w, i) => X.forEach((x, j) => out.push({ w, x, ok: i === 0 && j === 0, v: [w.v, x.v], tex: '\\begin{array}{l}\\omega_0=' + w.t + '\\\\ \\xi=' + x.t + '\\end{array}' })));
+    return out;
+  }
+  function qIdent() {
+    for (let k = 0; k < 300; k++) {
+      const lit = rnd() < 0.3; const wantQ = rnd() < 0.6;
+      const E = makeScheme(lit, wantQ ? (a) => a.order === 2 && a.cls === 0 && a.c.b.length === 1 : null); const s = E.s;
+      const steps = explain(s, E);
+      const base = (text) => baseQ('s_ident', text);
+      if (E.order === 2 && E.cls === 0 && E.c.b.length === 1) {
+        const as = lit ? rndAssign(allVars([E.c])) : {};
+        const all = wxChoices(E, lit, as); const truth = all.find((x) => x.ok);
+        const wrong = shuffle(all.filter((x) => !x.ok && (lit ? (x.v[0] !== truth.v[0] || x.v[1] !== truth.v[1]) : true))); const seen = new Set([truth.tex]); const ch = [];
+        for (const w of wrong) { if (seen.has(w.tex)) continue; seen.add(w.tex); ch.push(w); if (ch.length === 3) break; }
+        if (ch.length < 3) continue;
+        const fin = shuffle([truth].concat(ch));
+        return Object.assign(base('Le schéma bloc ci-dessous représente un système de fonction de transfert ' + HDEF + ' du second ordre et de classe 0. ' + (lit ? 'Identifier sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$ en fonction des paramètres.' : 'Identifier son gain statique $K$, sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$.')), {
+          choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => x.tex), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'kxw',
+        });
+      }
+      const pairs = []; for (let o = 1; o <= 3; o++) for (let c = 0; c <= Math.min(2, o); c++) pairs.push([o, c]);
+      const wr = shuffle(pairs.filter((p) => !(p[0] === E.order && p[1] === E.cls))).slice(0, 3);
+      const txt = (p) => 'Ordre $' + p[0] + '$, classe $' + p[1] + '$';
+      const fin = shuffle([[E.order, E.cls]].concat(wr));
+      return Object.assign(base('Quels sont l\'ordre et la classe du système représenté par le schéma bloc ci-dessous, de fonction de transfert ' + HDEF + ' ?'), {
+        choiceKind: 'text', choices: fin.map(txt), correctIndex: fin.findIndex((p) => p[0] === E.order && p[1] === E.cls), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'oc',
+      });
+    }
+    throw new Error('qIdent');
+  }
+
+  function blackTeX(s) {
+    const g = chainTeX(s.direct); const h = s.fb.length ? chainTeX(s.fb) : '';
+    return '\\dfrac{' + g + '}{1+' + (h ? h + '\\times' : '') + g + '}';
+  }
+  function qFrac() {
+    for (let k = 0; k < 300; k++) {
+      const E0 = makeScheme(false); const s0 = E0.s;
+      const s = { pre: [], direct: s0.direct, fb: s0.fb, post: [], lit: false };
+      const ev = evalScheme(s); const L = ev.L;
+      if (PM.deg(L.D) > 3 || mpIsZero(L.N[0]) || PM.deg(L.D) < 1) continue;
+      const G = seriesOf(s.direct), H = seriesOf(s.fb);
+      const mk = (N, D) => ({ N, D });
+      const cs = [
+        mk(PM.mul(G.N, H.D), PM.sub(PM.mul(G.D, H.D), PM.mul(G.N, H.N))),
+        mk(G.N, L.D), mk(PM.mul(G.N, H.D), PM.add(G.D, PM.mul(G.N, H.N))),
+        mk(PM.mul(G.N, H.D), PM.add(PM.mul(G.D, H.D), H.N)), mk(PM.mul(G.N, H.D), PM.add(PM.mul(G.D, H.D), G.N)),
+        mk(H.D, L.D), mk(PM.mul(G.N, H.D), PM.mul(G.D, H.D)), mk(PM.mul(G.N, H.N), L.D),
+      ];
+      const crossEq = (a, b) => PM.eq(PM.mul(a.N, b.D), PM.mul(b.N, a.D));
+      const seen = new Set([ptex(L.N) + '|' + ptex(L.D)]); const chosen = [];
+      let bad = false;
+      for (const cd of shuffle(cs)) {
+        if (mpIsZero(cd.D[PM.low(cd.D)]) || crossEq(cd, L) || chosen.some((x) => crossEq(x, cd))) continue;
+        let t; try { t = ptex(cd.N) + '|' + ptex(cd.D); } catch (e) { continue; }
+        if (seen.has(t) || PM.deg(cd.D) > 4) continue; seen.add(t); chosen.push(cd); if (chosen.length === 3) break;
+      }
+      if (chosen.length < 3) continue;
+      const tx = (r) => '\\dfrac{' + ptex(r.N) + '}{' + ptex(r.D) + '}';
+      const fin = shuffle([{ r: L, ok: true }].concat(chosen.map((r) => ({ r, ok: false }))));
+      const st = explain(s, { ev, T: L, c: null }, { stopAfterLoop: true }).slice(2);
+      const d0 = L.D[PM.low(L.D)];
+      st.push('Cette forme est un seul rapport de deux polynômes, mais elle n\'est pas encore canonique : le terme constant du dénominateur est $' + mpTeX(L.D[0]) + '$ et doit être ramené à $1$ par division du numérateur et du dénominateur.');
+      return Object.assign(baseQ('s_frac', 'La fonction de transfert d\'une boucle fermée est donnée par la formule de Black. Simplifier l\'expression pour obtenir un seul rapport de deux polynômes en $p$, développés et rangés par puissances croissantes (sans chercher la forme canonique).'), {
+        math: 'H_{BF}(p)=' + blackTeX(s), choiceKind: 'math', choices: fin.map((x) => tx(x.r)), correctIndex: fin.findIndex((x) => x.ok), steps: st, model: specOf(s), frac: true,
+      });
+    }
+    throw new Error('qFrac');
+  }
+  const FAMILIES = { s_ft: () => qCanon(false), s_lit: () => qCanon(true), s_frac: qFrac, s_ident: qIdent };
+  function generateSet(families, n) {
+    const fams = families && families.length ? families : Object.keys(FAMILIES);
+    const out = []; const seen = new Set(); let guard = 0, idx = 0;
+    while (out.length < n && guard++ < n * 40) {
+      const q = FAMILIES[fams[idx % fams.length]](); idx++;
+      const k = q.text + '|' + (q.math || '') + '|' + q.choices[q.correctIndex]; if (seen.has(k)) continue; seen.add(k); out.push(q);
+    }
+    return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
+  }
+
+  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, qCanon, qIdent, qFrac, wxChoices, specOf };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Slci = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 
 ;
@@ -2951,7 +3652,7 @@ ul.quant li { margin: 3px 0; }
           'Vitesses : ' + T('v\\ (\\mathrm{m/s})=\\dfrac{v\\ (\\mathrm{km/h})}{3{,}6}') + '. Énergie : ' + T('1\\ \\mathrm{Wh}=3{,}6\\ \\mathrm{kJ}') + '.',
           'Matériaux : acier ' + T('E\\approx200\\ \\mathrm{GPa}') + ' (' + T('210') + ' pour l\'acier courant), aluminium ' + T('E\\approx70\\ \\mathrm{GPa}') + '.',
           'Premier ordre : ' + T('63\\ \\%') + ' de la valeur finale à ' + T('t=\\tau') + ', ' + T('95\\ \\%') + ' à ' + T('3\\tau') + ' ; ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.',
-          'Second ordre : premier dépassement ' + T('D_1=100\\,e^{-\\pi\\zeta/\\sqrt{1-\\zeta^2}}') + ' ; ' + T('\\zeta=0{,}3\\Rightarrow37\\ \\%') + ', ' + T('\\zeta=0{,}5\\Rightarrow16\\ \\%') + ', ' + T('\\zeta=0{,}7\\Rightarrow5\\ \\%') + ' ; ' + T('Q\\approx\\dfrac{1}{2\\zeta}') + ' si ' + T('\\zeta') + ' est faible.',
+          'Second ordre : premier dépassement ' + T('D_1=100\\,e^{-\\pi\\xi/\\sqrt{1-\\xi^2}}') + ' ; ' + T('\\xi=0{,}3\\Rightarrow37\\ \\%') + ', ' + T('\\xi=0{,}5\\Rightarrow16\\ \\%') + ', ' + T('\\xi=0{,}7\\Rightarrow5\\ \\%') + ' ; ' + T('Q\\approx\\dfrac{1}{2\\xi}') + ' si ' + T('\\xi') + ' est faible.',
         ]));
     }
     function numMethod() {
@@ -2998,7 +3699,57 @@ ul.quant li { margin: 3px 0; }
           'Utiliser le rendement hors régime permanent.',
         ]));
     }
-    return { calc, deriv, liaisons, rdm, num, calcMethod, derivMethod, numMethod };
+
+    // ---------- Forme canonique des SLCI ----------
+    function slci() {
+      const tb = (head, rows) => '<table class="rtab"><thead><tr>' + head.map((h) => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + rows.map((r) => '<tr>' + r.map((c) => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+      return '<h1>Rappels : forme canonique des SLCI</h1>' +
+        card('Fonction de transfert', '<p>Pour un système linéaire continu invariant, avec des conditions initiales nulles, la fonction de transfert est le rapport de la transformée de Laplace de la sortie sur celle de l\'entrée. La variable de Laplace est notée ' + T('p') + '.</p>' + D('H(p)=\\dfrac{S(p)}{E(p)}') +
+          '<p>Dans un schéma bloc, la sortie ' + T('S(p)') + ' est à droite et l\'entrée ' + T('E(p)') + ' à gauche.</p>') +
+        card('Forme canonique générale', D('H(p)=\\dfrac{K\\left(1+b_1p+\\dots\\right)}{p^{\\alpha}\\left(1+a_1p+a_2p^{2}+\\dots+a_np^{n}\\right)}') +
+          UL(['Le terme de plus bas degré de chaque polynôme vaut ' + T('1') + ' : numérateur et dénominateur sont <b>normalisés</b>.', T('K') + ' : gain (gain statique si ' + T('\\alpha=0') + ').', T('\\alpha') + ' : <b>classe</b>, nombre d\'intégrateurs, c\'est-à-dire puissance de ' + T('p') + ' en facteur au dénominateur.', '<b>Ordre</b> : degré du dénominateur, soit ' + T('\\alpha+n') + '.'])) +
+        card('Premier ordre', D('H(p)=\\dfrac{K}{1+\\tau p}') + UL([T('K') + ' : gain statique.', T('\\tau') + ' : constante de temps, en s.', 'Pulsation de cassure : ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.'])) +
+        card('Second ordre', D('H(p)=\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}\\,p+\\dfrac{p^{2}}{\\omega_0^{2}}}') +
+          UL([T('K') + ' : gain statique.', T('\\xi') + ' : coefficient d\'amortissement, sans unité.', T('\\omega_0') + ' : pulsation propre non amortie, en rad/s.', 'Si ' + T('\\xi>1') + ' : deux pôles réels. Si ' + T('\\xi<1') + ' : pôles complexes conjugués, réponse oscillante. Si ' + T('\\xi=1') + ' : amortissement critique.']) +
+          '<p>Identification avec un dénominateur ' + T('1+a_1p+a_2p^{2}') + ' :</p>' + D('\\dfrac{2\\xi}{\\omega_0}=a_1,\\qquad\\dfrac{1}{\\omega_0^{2}}=a_2\\ \\Longrightarrow\\ \\omega_0=\\dfrac{1}{\\sqrt{a_2}},\\qquad\\xi=\\dfrac{a_1\\,\\omega_0}{2}=\\dfrac{a_1}{2\\sqrt{a_2}}')) +
+        card('Blocs usuels', tb(['Bloc', 'Fonction de transfert', 'Ordre', 'Classe'], [
+          ['Gain', T('K'), '0', '0'], ['Premier ordre', T('\\dfrac{K}{1+\\tau p}'), '1', '0'], ['Intégrateur', T('\\dfrac{K}{p}'), '1', '1'], ['Double intégrateur', T('\\dfrac{K}{p^{2}}'), '2', '2'], ['Second ordre', T('\\dfrac{K}{1+\\frac{2\\xi}{\\omega_0}p+\\frac{p^{2}}{\\omega_0^{2}}}'), '2', '0'], ['Intégrateur et premier ordre', T('\\dfrac{K}{p\\,(1+\\tau p)}'), '2', '1'],
+        ])) +
+        card('Association de blocs', UL(['<b>Blocs en série</b> : les fonctions de transfert se multiplient.', '<b>Blocs en parallèle</b> (sommateur) : les fonctions de transfert s\'additionnent.', '<b>Boucle à retour négatif</b> : formule de Black.']) +
+          '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.</div>' +
+          '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>');
+    }
+    function slciMethod() {
+      const S = root.Slci, BFg = root.BlockFigs;
+      const ex = { pre: [], direct: [S.gainB('K_{1}'), S.intB(), S.t1B(1, '\\tau_{1}')], fb: [S.gainB('K_{c}')], post: [], lit: true };
+      const fig = '<figure class="fig blockfig">' + BFg.draw(ex) + '<figcaption>Exemple traité : ' + T('G(p)=\\dfrac{K_1}{p\\,(1+\\tau_1p)}') + ', capteur ' + T('H_r(p)=K_c') + '.</figcaption></figure>';
+      return '<h1>Méthode : forme canonique des SLCI</h1>' +
+        card('Démarche', OL([
+          '<b>Repérer</b> la chaîne directe ' + T('G(p)') + ' de la boucle (produit des blocs en série), la chaîne de retour ' + T('H_r(p)') + ' (capteur, ou ' + T('1') + ' si le retour est unitaire) et les blocs situés avant ou après la boucle.',
+          '<b>Appliquer la formule de Black</b> : ' + T('H_{BF}=\\dfrac{G}{1+H_rG}') + '.',
+          '<b>Supprimer les fractions de fractions</b> : multiplier numérateur et dénominateur de la grande fraction par le produit des dénominateurs de ' + T('G') + ' et de ' + T('H_r') + '. Il ne reste qu\'un seul trait de fraction.',
+          '<b>Développer</b> pour obtenir un polynôme au numérateur et un polynôme au dénominateur, rangés par puissances croissantes de ' + T('p') + '. Multiplier ensuite par les blocs extérieurs à la boucle.',
+          '<b>Normaliser</b> : repérer le terme de plus bas degré non nul du dénominateur, ' + T('d_0') + ' (le terme constant si la classe est ' + T('0') + '), et diviser numérateur et dénominateur par ' + T('d_0') + '. Si le dénominateur n\'a pas de terme constant, mettre ' + T('p^{\\alpha}') + ' en facteur au préalable.',
+          '<b>Identifier</b> : gain ' + T('K') + ', ordre, classe et, pour un second ordre, ' + T('\\xi') + ' et ' + T('\\omega_0') + '.',
+        ])) +
+        card('Exemple traité', fig + D('H_{BF}(p)=\\dfrac{\\dfrac{K_1}{p(1+\\tau_1p)}}{1+K_c\\times\\dfrac{K_1}{p(1+\\tau_1p)}}=\\dfrac{K_1}{p(1+\\tau_1p)+K_cK_1}=\\dfrac{K_1}{K_1K_c+p+\\tau_1p^{2}}') +
+          '<p>Le terme constant est ' + T('d_0=K_1K_c') + ' : division du numérateur et du dénominateur par ' + T('K_1K_c') + ' :</p>' + D('H_{BF}(p)=\\dfrac{\\dfrac{1}{K_c}}{1+\\dfrac{1}{K_1K_c}\\,p+\\dfrac{\\tau_1}{K_1K_c}\\,p^{2}}') +
+          '<p>Ordre ' + T('2') + ', classe ' + T('0') + ', gain statique ' + T('K=\\dfrac{1}{K_c}') + '. Identification : ' + T('\\omega_0=\\sqrt{\\dfrac{K_1K_c}{\\tau_1}}') + ' et ' + T('\\xi=\\dfrac{1}{2\\sqrt{K_1K_c\\tau_1}}') + '.</p>') +
+        card('Fractions de fractions', '<p>Pour faire disparaître les petites fractions, multiplier le haut et le bas de la grande fraction par leur dénominateur commun :</p>' + D('\\dfrac{\\dfrac{a}{b}}{1+\\dfrac{c}{b}}=\\dfrac{\\dfrac{a}{b}\\times b}{\\left(1+\\dfrac{c}{b}\\right)\\times b}=\\dfrac{a}{b+c}') +
+          '<p>Avec un capteur du premier ordre, ' + T('G=\\dfrac{N_G}{D_G}') + ' et ' + T('H_r=\\dfrac{N_H}{D_H}') + ' :</p>' + D('H_{BF}=\\dfrac{N_G\\,D_H}{D_G\\,D_H+N_G\\,N_H}')) +
+        card('Normalisation', '<p>Diviser le haut et le bas par le terme de plus bas degré non nul du dénominateur. Exemple numérique :</p>' + D('\\dfrac{8}{2+4p+p^{2}}=\\dfrac{8/2}{2/2+(4/2)\\,p+(1/2)\\,p^{2}}=\\dfrac{4}{1+2p+0{,}5\\,p^{2}}') +
+          '<p>Avec un terme en ' + T('p') + ' en facteur : ' + D('\\dfrac{6}{p\\,(3+p)}=\\dfrac{6/3}{p\\,\\left(1+\\dfrac{p}{3}\\right)}=\\dfrac{2}{p\\left(1+\\dfrac{1}{3}p\\right)}') + 'Classe ' + T('1') + ' : un intégrateur en facteur du dénominateur.</p>') +
+        card('Identification d\'un second ordre', '<p>Pour ' + T('\\dfrac{K}{1+0{,}2\\,p+0{,}04\\,p^{2}}') + ' : ' + T('\\dfrac{1}{\\omega_0^{2}}=0{,}04') + ', donc ' + T('\\omega_0=5') + ' rad/s ; ' + T('\\dfrac{2\\xi}{\\omega_0}=0{,}2') + ', donc ' + T('\\xi=\\dfrac{0{,}2\\times5}{2}=0{,}5') + '.</p>') +
+        card('Pièges courants', UL([
+          'Oublier le <b>signe</b> de la boucle : le retour négatif donne ' + T('1+H_rG') + ', jamais ' + T('1-H_rG') + '.',
+          'Oublier le capteur dans le dénominateur, ou le multiplier au numérateur.',
+          'Ne diviser que le terme constant par ' + T('d_0') + ' en oubliant les autres coefficients, ou oublier de diviser le gain.',
+          'Inverser ' + T('\\omega_0') + ' : ' + T('\\omega_0=1/\\sqrt{a_2}') + ' et non ' + T('\\sqrt{a_2}') + '.',
+          'Oublier les blocs situés hors de la boucle, qui modifient le gain, l\'ordre et la classe.',
+          'Une boucle fermée dont la chaîne directe contient un intégrateur n\'est pas forcément de classe ' + T('1') + ' : la classe se lit sur le dénominateur final.',
+        ]));
+    }
+    return { calc, deriv, liaisons, rdm, num, slci, calcMethod, derivMethod, numMethod, slciMethod };
   }
   root.RecapMaker = make;
 })(window);
@@ -3007,7 +3758,7 @@ ul.quant li { margin: 3px 0; }
 // Application : choix du thème, réglages, questions, résultats, rappels
 (function () {
   'use strict';
-  const Q = window.Questions, F = window.Figures, L = window.Liaisons, RD = window.Rdm, DV = window.Deriv, NA = window.NumApp;
+  const Q = window.Questions, F = window.Figures, L = window.Liaisons, RD = window.Rdm, DV = window.Deriv, NA = window.NumApp, SL = window.Slci;
   const imgSrc = (k) => window.Schemas.uri(k);
   const app = document.getElementById('app');
 
@@ -3016,10 +3767,12 @@ ul.quant li { margin: 3px 0; }
     try { return window.katex.renderToString(s, { throwOnError: false, displayMode: !!display, strict: 'ignore', output: 'html' }); }
     catch (e) { return '<code>' + esc(s) + '</code>'; }
   }
-  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function escH(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  const esc = escH;
   // texte avec $...$ en ligne et $$...$$ en bloc
   function rtext(str) {
     let out = '';
+    const esc = (s) => escH(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     const re = /\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g;
     let last = 0, m;
     while ((m = re.exec(str))) {
@@ -3081,6 +3834,14 @@ ul.quant li { margin: 3px 0; }
       options: [['aids', 'Afficher une aide de calcul sous l\'énoncé']],
       recap: Recaps.num, method: Recaps.numMethod,
     },
+    slci: {
+      title: 'Forme canonique des SLCI', color: 'var(--green)',
+      desc: 'Schémas blocs avec boucle de retour : formule de Black, fractions de fractions, forme canonique, ordre, classe, ξ et ω0.',
+      intro: 'Chaque exercice présente un schéma bloc, avec ou sans capteur, avec éventuellement des blocs avant ou après la boucle. Il s\'agit de calculer la fonction de transfert H(p)=S(p)/E(p) : formule de Black, suppression des fractions de fractions, mise sous forme canonique, puis identification de l\'ordre, de la classe, du gain, de ξ et de ω0. La correction détaille chaque étape.',
+      fams: Object.keys(SL.FAM).map((k) => [k, SL.FAM[k]]),
+      gen: (fams, n) => SL.generateSet(fams, n),
+      options: [], recap: Recaps.slci, method: Recaps.slciMethod,
+    },
     rdm: {
       title: 'Résistance des matériaux', color: 'var(--orange)',
       desc: 'Torseur de cohésion, moments quadratiques, formules et ordres de grandeur.',
@@ -3090,7 +3851,7 @@ ul.quant li { margin: 3px 0; }
       multi: true, options: [], recap: Recaps.rdm,
     },
   };
-  const ORDER = ['calc', 'deriv', 'liaisons', 'num', 'rdm'];
+  const ORDER = ['calc', 'deriv', 'liaisons', 'num', 'slci', 'rdm'];
   const famLabel = {};
   ORDER.forEach((t) => THEMES[t].fams.forEach(([k, l]) => { famLabel[k] = l; }));
 
@@ -3199,6 +3960,7 @@ ul.quant li { margin: 3px 0; }
       h += '<details class="figbox" open><summary>Figures de calcul</summary>' + F.figureHTML(q.figure, rtext) + (q.figure.highlights.length ? legendHTML(q) : '') + '</details>';
     }
     h += '<div class="stmt">' + rtext(q.text) + '</div>';
+    if (q.block) h += '<figure class="blockfig">' + q.block + '</figure>';
     if (q.aid && settings.themes[cur].aids) h += '<div class="aid"><b>Aide de calcul.</b> ' + rtext(q.aid) + '</div>';
     if (q.multi) h += '<div class="hint">Cocher toutes les propositions exactes. La question est réussie si la sélection est exacte.</div>';
     if (q.image) h += '<figure class="schema"><img src="' + imgSrc(q.image) + '" alt="Schéma de liaison à identifier"></figure>';
@@ -3292,6 +4054,7 @@ ul.quant li { margin: 3px 0; }
       return '<details class="rev" ' + (good ? '' : 'open') + '><summary><span class="mark ' + (good ? 'ok' : 'ko') + '">' + (good ? '✓' : '✗') + '</span><span class="qline">' + line + '</span></summary><div class="inner">' +
         (q.figure ? '<details class="figbox"><summary>Figures de calcul</summary>' + F.figureHTML(q.figure, rtext) + '</details>' : '') +
         '<p>' + rtext(q.text) + '</p>' +
+        (q.block ? '<figure class="blockfig">' + q.block + '</figure>' : '') +
         (q.image ? '<figure class="schema"><img src="' + imgSrc(q.image) + '" alt="Schéma de liaison"></figure>' : '') +
         (q.math ? '<div class="math-block">' + tex(q.math, true) + '</div>' : '') +
         '<p><b>' + (q.multi ? 'Réponses choisies :' : 'Réponse choisie :') + '</b></p>' + ansHTML(q, an[i]) +

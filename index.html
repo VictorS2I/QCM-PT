@@ -3491,10 +3491,13 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
         '<p><b>Méthode.</b> On écrit le vecteur ' + T(ov('u')) + ' dans la base où il est constant, on repère le vecteur rotation de cette base par rapport à ' + T('b_0') + ', puis on calcule le produit vectoriel. Si plusieurs rotations s\'enchaînent, on décompose ce vecteur rotation par composition.</p>' +
         '<p>Pour une base de dérivation ' + T('b_0') + ' et un vecteur exprimé dans ' + T('b_2') + ', on passe par la base intermédiaire ' + T('b_1') + ' :</p>' +
         D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/1}') + '\\wedge' + ov('u') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/0}') + '\\wedge' + ov('u')) + '</section>' +
-        '<section class="card"><h2>Méthode graphique</h2><p>Valable quand la base de dérivation et la base du vecteur sont reliées par <b>une seule rotation</b> autour d\'un axe commun, d\'angle ' + T('\\theta') + '. Chaque vecteur perpendiculaire à l\'axe tourne de ' + T('+\\dfrac{\\pi}{2}') + ' dans le sens positif, multiplié par ' + T('\\dot{\\theta}') + '. Pour l\'axe ' + T(ov('z')) + ' :</p>' +
+        '<section class="card"><h2>Méthode graphique</h2>' +
+        '<div class="rule" style="margin:0 0 8px"><b>Condition d\'emploi.</b> La méthode graphique ne fonctionne que si l\'on dérive le vecteur dans une base <b>par rapport à laquelle on tourne</b> : le vecteur est constant dans une base ' + T('b_j') + ' qui est reliée à la base de dérivation par <b>une seule rotation</b>, d\'angle orienté ' + T('\\theta') + ', autour d\'un axe commun (une seule figure de calcul).</div>' +
+        '<p>Dans ce cas particulier, chaque vecteur perpendiculaire à l\'axe tourne de ' + T('+\\dfrac{\\pi}{2}') + ' dans le sens positif de l\'angle orienté, puis est multiplié par ' + T('\\dot{\\theta}') + '. Un vecteur porté par l\'axe a une dérivée nulle. Pour l\'axe ' + T(ov('z')) + ' :</p>' +
         D('\\dfrac{d\\,\\overrightarrow{x_1}}{dt}=\\dot{\\theta}\\,\\overrightarrow{y_1}\\qquad\\dfrac{d\\,\\overrightarrow{y_1}}{dt}=-\\dot{\\theta}\\,\\overrightarrow{x_1}') +
-        '<p>Permutation circulaire ' + T(ov('x') + '\\to' + ov('y') + '\\to' + ov('z') + '\\to' + ov('x')) + ' : le vecteur ' + T('k+1') + ' devient ' + T('\\dot{\\theta}') + ' fois le vecteur ' + T('k+2') + ', et le vecteur ' + T('k+2') + ' devient ' + T('-\\dot{\\theta}') + ' fois le vecteur ' + T('k+1') + ', l\'indice ' + T('k') + ' étant celui de l\'axe de rotation. Le vecteur porté par l\'axe a une dérivée nulle.</p>' +
-        '<p>Si le vecteur dépend de deux rotations non parallèles (axes différents), la méthode graphique ne suffit plus : on applique la formule de Bour.</p></section>' +
+        '<p><b>Pourquoi cette limite ?</b> Dériver un vecteur constant dans ' + T('b_j') + ' revient à calculer ' + T(ov('\\Omega_{j/0}') + '\\wedge' + ov('u')) + '. Avec une seule rotation, ' + T(ov('\\Omega_{j/0}')) + ' est porté par l\'axe de la figure et le produit vectoriel se réduit à un quart de tour. Avec deux rotations d\'axes différents, le vecteur rotation ' + T(ov('\\Omega_{2/0}') + '=' + ov('\\Omega_{2/1}') + '+' + ov('\\Omega_{1/0}')) + ' n\'est plus porté par un seul axe : la lecture sur une figure ne suffit plus.</p>' +
+        '<p><b>Cas où la méthode graphique ne s\'applique pas :</b> vecteur constant dans ' + T('b_2') + ' et dérivé dans ' + T('b_0') + ' (deux rotations successives), ou dérivée prise dans une base qui n\'est pas reliée au vecteur par une seule rotation. On utilise alors la formule de Bour.</p>' +
+        '<p>La <b>formule de Bour</b>, elle, est générale : valable pour tout vecteur et pour deux bases quelconques. La méthode graphique n\'en est qu\'un cas particulier, commode mais limité.</p></section>' +
         '<section class="card"><h2>Vecteur de norme variable</h2>' +
         D('\\dfrac{d}{dt}\\left(\\lambda(t)\\,' + ov('u') + '\\right)=\\dot{\\lambda}\\,' + ov('u') + '+\\lambda\\,\\dfrac{d\\,' + ov('u') + '}{dt}') +
         '<p>Exemple : ' + T('\\overrightarrow{OM}=\\lambda(t)\\,\\overrightarrow{x_1}') + ' donne ' + T('\\left.\\dfrac{d\\,\\overrightarrow{OM}}{dt}\\right|_{b_0}=\\dot{\\lambda}\\,\\overrightarrow{x_1}+\\lambda\\,\\dot{\\alpha}\\,\\overrightarrow{y_1}') + ' pour une rotation ' + T('\\alpha') + ' autour de ' + T('\\overrightarrow{z}') + '.</p></section>';
@@ -3518,11 +3521,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
           'Factoriser les coefficients (nombres devant les vecteurs), puis écrire le résultat sous la forme demandée (base de sortie imposée pour un vecteur).',
           'Contrôler le résultat avec un cas particulier (voir plus bas).',
         ])) +
-        card('Projeter un vecteur à l\'aide d\'une figure de calcul', '<p>Les deux bases ont un axe commun, perpendiculaire au plan de la figure. Pour une rotation d\'angle orienté ' + T('\\theta') + ' autour de l\'axe commun, avec la permutation circulaire ' + T('(\\overrightarrow{e_k},\\overrightarrow{e_{k+1}},\\overrightarrow{e_{k+2}})') + ' des axes ' + T('x,y,z') + ' :</p>' +
-          D('\\overrightarrow{e_{k+1}}\'=\\cos\\theta\\,\\overrightarrow{e_{k+1}}+\\sin\\theta\\,\\overrightarrow{e_{k+2}}') +
-          D('\\overrightarrow{e_{k+2}}\'=-\\sin\\theta\\,\\overrightarrow{e_{k+1}}+\\cos\\theta\\,\\overrightarrow{e_{k+2}}') +
-          '<p>L\'axe commun ne change pas : ' + T('\\overrightarrow{e_k}\'=\\overrightarrow{e_k}') + '.</p>' +
-          '<p>Exemple pour l\'axe commun ' + T(z) + ' : ' + T(ov('x_1') + '=\\cos\\alpha\\,' + x + '+\\sin\\alpha\\,' + y) + ' et ' + T(ov('y_1') + '=-\\sin\\alpha\\,' + x + '+\\cos\\alpha\\,' + y) + '.</p>' +
+        card('Projeter un vecteur à l\'aide d\'une figure de calcul', '<p>Les deux bases ont un axe commun, perpendiculaire au plan de la figure. La projection se fait par <b>lecture graphique</b> sur la figure de calcul, à partir de l\'angle orienté ' + T('\\theta') + '.</p>' +
           '<p><b>Lecture graphique :</b> pour projeter un axe sur les axes de l\'autre base, on lit l\'angle sur la figure. Le cosinus est associé à l\'axe qui fait l\'angle ' + T('\\theta') + ' avec le vecteur, le sinus à l\'axe perpendiculaire. Le signe du sinus se lit avec la flèche de l\'angle orienté : ' + T('+') + ' si l\'axe de projection est atteint en tournant dans le sens de la flèche, ' + T('-') + ' sinon.</p>' +
           '<p class="lab">Méthode graphique de projection</p>' +
           OL([
@@ -3531,7 +3530,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
             'Lire chaque composante : ' + T('\\cos\\theta') + ' pour l\'axe qui fait l\'angle ' + T('\\theta') + ' avec le vecteur, ' + T('\\sin\\theta') + ' pour l\'axe perpendiculaire.',
             'Fixer le signe : positif si la projection pointe dans le sens de l\'axe, négatif sinon.',
           ]) + MF.projection(rtext) +
-          '<p class="hint">Les deux schémas ci-dessus sont tracés pour l\'axe commun ' + T(z) + '. Pour un autre axe commun, les rôles des axes suivent la permutation circulaire.</p>' +
+          '<p class="hint">Les deux schémas ci-dessus sont tracés pour l\'axe commun ' + T(z) + '. Pour un autre axe commun, la lecture est identique : angles et signes se lisent sur la figure.</p>' +
           F.figureHTML(info, rtext)) +
         card('Produit scalaire', UL([
           '<b>Même base :</b> ' + T(x + '\\cdot' + x + '=1') + ' et ' + T(x + '\\cdot' + y + '=0') + ' (base orthonormée).',
@@ -3573,7 +3572,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
           'Fixer la base de dérivation : c\'est toujours ' + T('b_0') + ', notée ' + T(dd('u', '0')) + '.',
           'Écrire le vecteur dans la base où il est <b>constant</b> (' + T('b_1') + ' ou ' + T('b_2') + '), éventuellement multiplié par une fonction du temps.',
           'Identifier les vecteurs rotation à l\'aide des figures de calcul : ' + T(ov('\\Omega_{1/0}') + '=\\dot{\\alpha}\\,' + ov('\\text{axe}')) + ' et ' + T(ov('\\Omega_{2/1}') + '=\\dot{\\beta}\\,' + ov('\\text{axe}')) + ', le signe dépendant de l\'orientation de l\'axe de la figure.',
-          '<b>Choisir la méthode :</b> une seule rotation entre ' + T('b_0') + ' et la base du vecteur, méthode graphique ; deux rotations, formule de Bour.',
+          '<b>Choisir la méthode :</b> méthode graphique uniquement si une seule rotation relie la base de dérivation ' + T('b_0') + ' à la base où le vecteur est constant ; dans tous les autres cas (deux rotations, par exemple), formule de Bour.',
           'Calculer le produit vectoriel (permutation circulaire), en projetant si besoin le vecteur rotation dans la base du vecteur.',
           'Exprimer le résultat dans la base demandée.',
         ])) +
@@ -3583,7 +3582,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
           'Inversion : ' + T(ov('\\Omega_{0/1}') + '=-' + ov('\\Omega_{1/0}')) + '.',
           'Indices : le premier désigne la base qui contient le vecteur (celle qui tourne), le second la base de dérivation.',
         ]) + F.figureHTML(info, rtext)) +
-        card('Méthode graphique (une seule rotation)', '<p>Le vecteur est constant dans ' + T('b_j') + ' et ' + T('b_j') + ' tourne de l\'angle orienté ' + T('\\theta') + ' autour d\'un axe commun avec ' + T('b_0') + '.</p>' +
+        card('Méthode graphique (une seule rotation)', '<div class="rule" style="margin:0 0 8px"><b>Condition d\'emploi.</b> La méthode graphique ne fonctionne que si l\'on dérive dans une base <b>par rapport à laquelle on tourne</b> : le vecteur est constant dans ' + T('b_j') + ', et ' + T('b_j') + ' est reliée à la base de dérivation par <b>une seule rotation</b>, d\'angle orienté ' + T('\\theta') + ', autour d\'un axe commun. Elle ne marche donc que dans des cas particuliers, contrairement à la formule de Bour.</div>' +
           UL([
             'Un vecteur porté par l\'axe de rotation a une dérivée nulle.',
             'Un vecteur perpendiculaire à l\'axe : on le tourne de ' + T('90^{\\circ}') + ' dans le sens positif de l\'angle orienté, puis on multiplie par la vitesse de rotation ' + T('\\dot{\\theta}') + '.',
@@ -3592,7 +3591,7 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
           '<p>Exemple avec ' + T(ov('z') + '=' + ov('z_1')) + ' comme axe commun.</p>' +
           MF.derivation(rtext) +
           '<p>Le vecteur dérivé de chaque vecteur est obtenu en le tournant de ' + T('90^{\\circ}') + ' dans le sens de l\'angle orienté (flèche de l\'arc) puis en multipliant par ' + T('\\dot{\\alpha}') + '. Pour un vecteur unitaire, sa longueur vaut ' + T('|\\dot{\\alpha}|') + '.</p>' +
-          '<p>Cela revient à ' + T(dd('u', '0') + '=' + ov('\\Omega_{j/0}') + '\\wedge' + ov('u')) + ' avec la permutation circulaire.</p>') +
+          '<p><b>Pourquoi cette limite ?</b> La dérivée vaut ' + T(dd('u', '0') + '=' + ov('\\Omega_{j/0}') + '\\wedge' + ov('u')) + '. Avec une seule rotation, le vecteur rotation est porté par l\'axe de la figure et le produit vectoriel est un quart de tour. Avec deux rotations d\'axes différents, pour un vecteur constant dans ' + T('b_2') + ' et dérivé dans ' + T('b_0') + ', le vecteur rotation ' + T(ov('\\Omega_{2/0}') + '=' + ov('\\Omega_{2/1}') + '+' + ov('\\Omega_{1/0}')) + ' n\'est plus porté par un seul axe : il faut la formule de Bour.</p>') +
         card('Formule de Bour', '<div class="rule" style="margin:0 0 8px"><b>Formule de Bour.</b> Pour tout vecteur ' + T(ov('u')) + ' et deux bases ' + T('b_0') + ' et ' + T('b_1') + ' :</div>' +
           D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) +
           '<p>La dérivée dans ' + T('b_0') + ' est la dérivée dans ' + T('b_1') + ' (on traite ' + T('b_1') + ' comme fixe), augmentée du terme d\'entraînement ' + T(ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) + ' dû à la rotation de ' + T('b_1') + ' par rapport à ' + T('b_0') + '.</p>' +
@@ -3710,13 +3709,19 @@ figure.blockfig > svg { display: block; max-width: 680px; margin: 0 auto; height
           UL(['Le terme de plus bas degré de chaque polynôme vaut ' + T('1') + ' : numérateur et dénominateur sont <b>normalisés</b>.', T('K') + ' : gain (gain statique si ' + T('\\alpha=0') + ').', T('\\alpha') + ' : <b>classe</b>, nombre d\'intégrateurs, c\'est-à-dire puissance de ' + T('p') + ' en facteur au dénominateur.', '<b>Ordre</b> : degré du dénominateur, soit ' + T('\\alpha+n') + '.'])) +
         card('Premier ordre', D('H(p)=\\dfrac{K}{1+\\tau p}') + UL([T('K') + ' : gain statique.', T('\\tau') + ' : constante de temps, en s.', 'Pulsation de cassure : ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.'])) +
         card('Second ordre', D('H(p)=\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}\\,p+\\dfrac{p^{2}}{\\omega_0^{2}}}') +
-          UL([T('K') + ' : gain statique.', T('\\xi') + ' : coefficient d\'amortissement, sans unité.', T('\\omega_0') + ' : pulsation propre non amortie, en rad/s.', 'Si ' + T('\\xi>1') + ' : deux pôles réels. Si ' + T('\\xi<1') + ' : pôles complexes conjugués, réponse oscillante. Si ' + T('\\xi=1') + ' : amortissement critique.']) +
-          '<p>Identification avec un dénominateur ' + T('1+a_1p+a_2p^{2}') + ' :</p>' + D('\\dfrac{2\\xi}{\\omega_0}=a_1,\\qquad\\dfrac{1}{\\omega_0^{2}}=a_2\\ \\Longrightarrow\\ \\omega_0=\\dfrac{1}{\\sqrt{a_2}},\\qquad\\xi=\\dfrac{a_1\\,\\omega_0}{2}=\\dfrac{a_1}{2\\sqrt{a_2}}')) +
+          UL([T('K') + ' : gain statique.', T('\\xi') + ' : coefficient d\'amortissement, sans unité.', T('\\omega_0') + ' : pulsation propre non amortie, en rad/s.', ]) + '<p><b>Régimes de fonctionnement</b> selon la valeur de ' + T('\\xi') + ' :</p>' +
+          UL([
+            '<b>Régime apériodique</b>, ' + T('\\xi>1') + ' : deux pôles réels distincts, réponse sans oscillation ni dépassement.',
+            '<b>Régime pseudo-périodique</b>, ' + T('0<\\xi<1') + ' : deux pôles complexes conjugués, réponse oscillante amortie avec dépassement, de pseudo-pulsation ' + T('\\omega_p=\\omega_0\\sqrt{1-\\xi^{2}}') + '.',
+            '<b>Régime critique</b>, ' + T('\\xi=1') + ' : un pôle réel double, réponse la plus rapide sans dépassement.',
+          ]) +
+          '<p>Identification avec un dénominateur ' + T('1+a_1p+a_2p^{2}') + ' :</p>' + D('\\dfrac{2\\xi}{\\omega_0}=a_1\\qquad\\dfrac{1}{\\omega_0^{2}}=a_2') + D('\\omega_0=\\dfrac{1}{\\sqrt{a_2}}\\qquad\\xi=\\dfrac{a_1\\,\\omega_0}{2}=\\dfrac{a_1}{2\\sqrt{a_2}}')) +
         card('Blocs usuels', tb(['Bloc', 'Fonction de transfert', 'Ordre', 'Classe'], [
           ['Gain', T('K'), '0', '0'], ['Premier ordre', T('\\dfrac{K}{1+\\tau p}'), '1', '0'], ['Intégrateur', T('\\dfrac{K}{p}'), '1', '1'], ['Double intégrateur', T('\\dfrac{K}{p^{2}}'), '2', '2'], ['Second ordre', T('\\dfrac{K}{1+\\frac{2\\xi}{\\omega_0}p+\\frac{p^{2}}{\\omega_0^{2}}}'), '2', '0'], ['Intégrateur et premier ordre', T('\\dfrac{K}{p\\,(1+\\tau p)}'), '2', '1'],
         ])) +
         card('Association de blocs', UL(['<b>Blocs en série</b> : les fonctions de transfert se multiplient.', '<b>Blocs en parallèle</b> (sommateur) : les fonctions de transfert s\'additionnent.', '<b>Boucle à retour négatif</b> : formule de Black.']) +
           '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.</div>' +
+          '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'G(p)', denTex: '' }], fb: [{ numTex: 'H_{r}(p)', denTex: '' }], post: [], lit: true }) + '<figcaption>Boucle à retour négatif : chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + '.</figcaption></figure>' +
           '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>');
     }
     function slciMethod() {

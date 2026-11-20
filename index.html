@@ -1085,7 +1085,56 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       ['$\\overrightarrow{\\Omega_{1/0}}=\\dot{\\alpha}\\,\\overrightarrow{z}$', '$\\overrightarrow{\\Omega_{2/1}}=\\dot{\\beta}\\,\\overrightarrow{x_1}$', '$\\overrightarrow{\\Omega_{2/0}}=\\overrightarrow{\\Omega_{2/1}}+\\overrightarrow{\\Omega_{1/0}}$'], inline) + '</div>';
   }
 
-  const api = { projection, derivation, bour };
+
+  // --- Division posée à la main (potence) ---
+  function division(a, b, decimals, caption, inline) {
+    const MONO = 'ui-monospace,Menlo,Consolas,monospace';
+    const cw = 15, cm = 7, lh = 25, fs = 20, left = 28, top = 26;
+    const D = String(a).split(''); const ni = D.length;
+    if (decimals > 0) { D.push(','); for (let i = 0; i < decimals; i++) D.push('0'); }
+    const xs = []; let x = left; D.forEach((c) => { xs.push(x); x += c === ',' ? cm : cw; });
+    const xEnd = x; const dig = (i) => (D[i] === ',' ? null : i);
+    const prevCol = (i) => (i > 0 && D[i - 1] === ',' ? i - 2 : i - 1);
+    const nextCol = (i) => (D[i + 1] === ',' ? i + 2 : i + 1);
+    let rem = 0, started = false; const q = []; const steps = [];
+    D.forEach((ch, idx) => {
+      if (ch === ',') { if (!started) { q.push('0'); started = true; } q.push(','); return; }
+      const cur = rem * 10 + (+ch); const qd = Math.floor(cur / b);
+      if (!started && qd === 0) { rem = cur; return; }
+      started = true; q.push(String(qd)); steps.push({ idx, cur, sub: qd * b, rem: cur - qd * b }); rem = cur - qd * b;
+    });
+    let out = '';
+    const T = (px, py, str, color, anchor, bold) => '<text x="' + f1(px) + '" y="' + f1(py) + '" fill="' + color + '" font-family="' + MONO + '" font-size="' + fs + '"' + (bold ? ' font-weight="bold"' : '') + ' text-anchor="' + (anchor || 'middle') + '">' + str + '</text>';
+    const ln = (x1, y1, x2, y2, col, w) => '<line x1="' + f1(x1) + '" y1="' + f1(y1) + '" x2="' + f1(x2) + '" y2="' + f1(y2) + '" stroke="' + col + '" stroke-width="' + (w || 1.6) + '" stroke-linecap="round"/>';
+    const y = (r) => top + r * lh;
+    const cx = (i) => xs[i] + (D[i] === ',' ? cm : cw) / 2;
+    // dividende
+    D.forEach((c, i) => { out += T(cx(i), y(0), c, i >= ni ? MU : FG); });
+    // potence : double barre
+    const xp = xEnd + 4; const nq = q.length;
+    const qw = Math.max(String(b).length, nq) * cw + 14;
+    out += ln(xp, y(0) - 20, xp, y(1) + 6, FG, 1.8) + ln(xp, y(0) + 6, xp + qw, y(0) + 6, FG, 1.8);
+    out += T(xp + 10, y(0), String(b), FG, 'start', true);
+    out += T(xp + 10, y(1), q.join(''), OR, 'start', true);
+    // étapes
+    const rows = 2 * steps.length;
+    steps.forEach((st, k) => {
+      const rs = 2 * k + 1, rr = 2 * k + 2;
+      const put = (str, idx, row, col) => { let c = idx; for (let j = str.length - 1; j >= 0; j--) { out += T(cx(c), y(row), str[j], col || FG); c = prevCol(c); } return c; };
+      const cLeft = put(String(st.sub), st.idx, rs);
+      const curLen = String(st.cur).length; let lc = st.idx; for (let j = 1; j < Math.max(curLen, String(st.sub).length); j++) lc = prevCol(lc);
+      const minusX = xs[Math.max(0, Math.min(cLeft, lc))] - 8;
+      out += T(minusX + 1, y(rs), '−', FG);
+      out += ln(minusX - 6, y(rs) + 6, xs[st.idx] + cw + 1, y(rs) + 6, MU, 1.4);
+      put(String(st.rem), st.idx, rr);
+      if (k < steps.length - 1) { const nc = nextCol(st.idx); out += T(cx(nc), y(rr), D[nc], OR); }
+    });
+    const Wd = xp + qw + 14, Hd = y(rows + 1) - 6;
+    const s = '<svg viewBox="0 0 ' + Math.round(Wd) + ' ' + Math.round(Hd) + '" xmlns="http://www.w3.org/2000/svg" role="img" style="background:var(--fig-bg);border-radius:8px;max-width:' + Math.round(Wd * 1.1) + 'px">' + out + '</svg>';
+    return '<figure class="fig">' + s + '<figcaption>' + inline(caption) + '</figcaption></figure>';
+  }
+
+  const api = { projection, derivation, bour, division };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MethodFigs = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2914,17 +2963,20 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     s.direct.forEach((b, i) => { if (s.dist && i === s.dist.at) seg.push({ t: 'd' }); seg.push({ t: 'b', b }); });
     if (s.dist && s.dist.at >= s.direct.length) seg.push({ t: 'd' });
     s.post.forEach((b) => seg.push({ t: 'b', b, post: true }));
-    let xc = 0, xtap = 0; let lastDirectEnd = 0; const sensors = [];
+    let xc = 0, xtap = 0; let lastDirectEnd = 0; const sensors = []; let afterC = false;
     let k = 0; const nDirect = s.direct.length; let directSeen = 0;
     seg.forEach((e, idx) => {
-      const gap = G;
+      const gap = G + (afterC && s.marks ? 24 : 0);
+      if (e.t !== 'c') afterC = afterC && false;
       if (e.t === 'c') {
         const R = 18; const cx = prev + gap + R; h += arrow(prev, y0, cx - R, y0);
         const d = R * Math.SQRT1_2;
         h += '<circle cx="' + f1(cx) + '" cy="' + y0 + '" r="' + R + '" fill="var(--fig-bg)" stroke="' + FG + '" stroke-width="1.6"/>';
         h += '<line x1="' + f1(cx - d) + '" y1="' + f1(y0 - d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 + d) + '" stroke="' + FG + '" stroke-width="1.3"/><line x1="' + f1(cx - d) + '" y1="' + f1(y0 + d) + '" x2="' + f1(cx + d) + '" y2="' + f1(y0 - d) + '" stroke="' + FG + '" stroke-width="1.3"/>';
         h += '<text x="' + f1(cx - 10.5) + '" y="' + f1(y0 + 4.5) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="15" font-weight="bold" text-anchor="middle">+</text><text x="' + f1(cx) + '" y="' + f1(y0 + 14) + '" fill="' + FG + '" font-family="' + SERIF + '" font-size="16" font-weight="bold" text-anchor="middle">' + (s.pos ? '+' : '−') + '</text>';
-        xc = cx; prev = cx + R; return;
+        xc = cx; prev = cx + R; afterC = true;
+        if (s.marks) h += text(cx + R + 4, y0 - 7, '<tspan font-style="italic">ε</tspan>(<tspan font-style="italic">p</tspan>)', 'start');
+        return;
       }
       if (e.t === 'd') {
         const R = 18; const cx = prev + gap + R; h += arrow(prev, y0, cx - R, y0);
@@ -2961,6 +3013,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       h += line(fx, yfb, xc, yfb);
     } else h += line(xtap, yfb, xc, yfb);
     h += arrow(xc, yfb, xc, y0 + 18);
+    if (s.marks) h += text(xc - 7, y0 + 40, '<tspan font-style="italic">R</tspan>(<tspan font-style="italic">p</tspan>)', 'end');
     const H = yfb + (hasFb ? BH / 2 + 8 : 14);
     return '<svg viewBox="0 0 ' + Math.round(W) + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma bloc à identifier" style="background:var(--fig-bg);border-radius:8px;width:100%;min-width:' + Math.round(W * 0.78) + 'px">' + h + '</svg>';
   }
@@ -3409,7 +3462,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return tailSteps(E, curN, curD, steps);
   }
   // FTBO : produit des blocs de la boucle (chaîne directe puis chaîne de retour), signe du comparateur exclu
-  const FTBODEF = '**Définition de la FTBO.** La fonction de transfert en boucle ouverte se lit sur la boucle seule : elle part du signal $\\varepsilon(p)$, juste après le comparateur, suit la chaîne directe puis la chaîne de retour, et s\'arrête au signal renvoyé vers le comparateur. Le signe du comparateur n\'en fait pas partie.';
+  const FTBODEF = '**Définition de la FTBO.** $\\mathrm{FTBO}(p)=\\dfrac{R(p)}{\\varepsilon(p)}$ : $\\varepsilon(p)$ est le signal situé juste après le comparateur et $R(p)$ le signal renvoyé au comparateur, juste avant son signe. La boucle seule est donc parcourue de $\\varepsilon(p)$ à $R(p)$ : chaîne directe, puis chaîne de retour. Le signe du comparateur n\'en fait pas partie.';
   function boHead(s) {
     const hasFb = s.fb.length > 0; const G = s.direct, H = s.fb;
     const gTeX = chainTeX(G), hTeX = hasFb ? chainTeX(H) : '1';
@@ -3422,7 +3475,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     out.push(l1[0] + '\n- ' + l1.slice(1).join('\n- '));
     const dAll = dfDisplay(chainDfs(G).concat(chainDfs(H)));
     const nums = prodTeX([mpPart(chainNum(G)), mpPart(chainNum(H))]);
-    out.push('**Produit des blocs de la boucle** : ' + (s.pos ? 'le signe $+$ du comparateur' : 'le signe $-$ du comparateur') + ' n\'intervient pas dans la FTBO. Les blocs sont en série, donc leurs fonctions de transfert se multiplient :\n$$\\mathrm{FTBO}(p)=G(p)\\,H_r(p)=' + gTeX + (hasFb ? '\\times' + hTeX : '') + '=\\dfrac{' + (nums === '1' ? '1' : nums) + '}{' + dAll + '}$$');
+    out.push('**Produit des blocs de la boucle** : ' + (s.pos ? 'le signe $+$ du comparateur' : 'le signe $-$ du comparateur') + ' n\'intervient pas dans la FTBO. Les blocs sont en série, donc leurs fonctions de transfert se multiplient :\n$$\\begin{aligned}\\mathrm{FTBO}(p)&=G(p)\\,H_r(p)\\\\&=' + gTeX + (hasFb ? '\\times' + hTeX : '') + '\\\\&=\\dfrac{' + (nums === '1' ? '1' : nums) + '}{' + dAll + '}\\end{aligned}$$');
     return out;
   }
   function explainBO(s, E, intro) {
@@ -3430,7 +3483,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const T = E.T;
     steps.push('**Développer** et ranger les polynômes par puissances croissantes de $p$ :\n$$\\mathrm{FTBO}(p)=\\dfrac{' + ptex(T.N) + '}{' + ptex(T.D) + '}$$');
     tailSteps(E, T.N, T.D, steps, '\\mathrm{FTBO}(p)');
-    steps[steps.length - 1] += '\nLa classe n\'a d\'utilité que pour la FTBO : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe.';
+    steps.push('!! **Remarque.** La classe n\'a d\'utilité que pour la FTBO : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe.');
     return steps;
   }
   // correction d'une question de poursuite et régulation : superposition, puis boucle simple pour chaque cas
@@ -3540,13 +3593,13 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     throw new Error('qCanon');
   }
 
-  const BODEF = ' On rappelle que la FTBO se lit sur la boucle seule : de $\\varepsilon(p)$, juste après le comparateur, jusqu\'au signal renvoyé vers le comparateur, sans le signe du comparateur.';
+  const BODEF = ' On définit la FTBO par $\\mathrm{FTBO}(p)=\\dfrac{R(p)}{\\varepsilon(p)}$, où $\\varepsilon(p)$ est le signal situé juste après le comparateur et $R(p)$ le signal renvoyé au comparateur, juste avant son signe. Le signe du comparateur n\'intervient donc pas.';
   function qBO(lit) {
     for (let k = 0; k < 300; k++) {
       const E = makeScheme(lit, null, 'bo'); const s = E.s; const wr = pickWrong(s, E, null, 'bo'); if (!wr) continue;
       const all = shuffle([{ tex: canonTeX(E.c), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
       return Object.assign(baseQ('s_bo', 'Déterminer la fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)$ du système représenté par le schéma bloc ci-dessous, puis la mettre sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.') + BODEF), {
-        choiceKind: 'math', choices: all.map((x) => x.tex), correctIndex: all.findIndex((x) => x.ok), steps: explainBO(s, E), block: BF ? BF.draw(s) : '', model: specOf(s), kind: 'bo',
+        choiceKind: 'math', choices: all.map((x) => x.tex), correctIndex: all.findIndex((x) => x.ok), steps: explainBO(s, E), block: BF ? BF.draw(Object.assign({}, s, { marks: true })) : '', model: specOf(s), kind: 'bo',
       });
     }
     throw new Error('qBO');
@@ -3593,7 +3646,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         choices = all.map((x) => x.tex); correctIndex = all.findIndex((x) => x.ok); stepsOut = explainPR(P, variant);
       }
       return Object.assign(baseQ('s_pr', text), {
-        choiceKind: 'math', choices, correctIndex, steps: stepsOut, block: BF ? BF.draw(s) : '', model: specOf(s), pr: variant,
+        choiceKind: 'math', choices, correctIndex, steps: stepsOut, block: BF ? BF.draw(variant === 'bo' ? Object.assign({}, s, { marks: true }) : s) : '', model: specOf(s), pr: variant,
       });
     }
     throw new Error('qPR');
@@ -3635,7 +3688,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       const E = makeScheme(lit, wantQ ? isKxw : (bo ? null : (a) => a.cls === 0), mode); const s = E.s;
       const steps = bo ? explainBO(s, E) : explain(s, E);
       const base = (text) => baseQ('s_ident', text);
-      const WHO = bo ? 'dont la fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)=G(p)\\,H_r(p)$ (signe du comparateur exclu, blocs hors boucle exclus)' : 'dont la fonction de transfert en boucle fermée (FTBF) est ' + HDEF;
+      const WHO = bo ? 'dont la fonction de transfert en boucle ouverte est $\\mathrm{FTBO}(p)=\\dfrac{R(p)}{\\varepsilon(p)}$ ($\\varepsilon(p)$ juste après le comparateur, $R(p)$ renvoyé au comparateur avant son signe)' : 'dont la fonction de transfert en boucle fermée (FTBF) est ' + HDEF;
       if (isKxw(E)) {
         const as = lit ? rndAssign(allVars([E.c])) : {};
         const all = wxChoices(E, lit, as); const truth = all.find((x) => x.ok);
@@ -3644,7 +3697,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         if (ch.length < 3) continue;
         const fin = shuffle([truth].concat(ch));
         return Object.assign(base('Le schéma bloc ci-dessous représente un système ' + WHO + ', du second ordre et de classe 0. ' + (lit ? 'Identifier sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$ en fonction des paramètres.' : 'Identifier son gain statique $K$, sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$.')), {
-          choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => x.tex), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'kxw', kind: bo ? 'bo' : 'bf',
+          choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => x.tex), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(bo ? Object.assign({}, s, { marks: true }) : s) : '', model: specOf(s), ident: 'kxw', kind: bo ? 'bo' : 'bf',
         });
       }
       if (bo) {
@@ -3653,7 +3706,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         const txt = (p) => 'Ordre $' + p[0] + '$, classe $' + p[1] + '$';
         const fin = shuffle([[E.order, E.cls]].concat(wr));
         return Object.assign(base('Quels sont l\'ordre et la classe du système représenté par le schéma bloc ci-dessous, ' + WHO + ' ?'), {
-          choiceKind: 'text', choices: fin.map(txt), correctIndex: fin.findIndex((p) => p[0] === E.order && p[1] === E.cls), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'oc', kind: 'bo',
+          choiceKind: 'text', choices: fin.map(txt), correctIndex: fin.findIndex((p) => p[0] === E.order && p[1] === E.cls), steps, block: BF ? BF.draw(Object.assign({}, s, { marks: true })) : '', model: specOf(s), ident: 'oc', kind: 'bo',
         });
       }
       // FTBF : ordre et gain statique (la classe n'est demandée que pour la FTBO)
@@ -3833,6 +3886,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         '<div class="rule" style="margin:0 0 8px"><b>Condition d\'emploi.</b> La méthode graphique ne fonctionne que si l\'on dérive le vecteur dans une base <b>par rapport à laquelle on tourne</b> : le vecteur est constant dans une base ' + T('b_j') + ' qui est reliée à la base de dérivation par <b>une seule rotation</b>, d\'angle orienté ' + T('\\theta') + ', autour d\'un axe commun (une seule figure de calcul).</div>' +
         '<p>Dans ce cas particulier, chaque vecteur perpendiculaire à l\'axe tourne de ' + T('+\\dfrac{\\pi}{2}') + ' dans le sens positif de l\'angle orienté, puis est multiplié par ' + T('\\dot{\\theta}') + '. Un vecteur porté par l\'axe a une dérivée nulle. Pour l\'axe ' + T(ov('z')) + ' :</p>' +
         D('\\dfrac{d\\,\\overrightarrow{x_1}}{dt}=\\dot{\\theta}\\,\\overrightarrow{y_1}\\qquad\\dfrac{d\\,\\overrightarrow{y_1}}{dt}=-\\dot{\\theta}\\,\\overrightarrow{x_1}') +
+        '<p>Sur la figure, chaque vecteur dérivé (en orange) part de l\'extrémité du vecteur dont il est la dérivée : il est perpendiculaire à ce vecteur, dans le sens de l\'angle orienté, et sa longueur est proportionnelle à ' + T('|\\dot{\\alpha}|') + '.</p>' + MF.derivation(rtext) +
         '<p><b>Pourquoi cette limite ?</b> Dériver un vecteur constant dans ' + T('b_j') + ' revient à calculer ' + T(ov('\\Omega_{j/0}') + '\\wedge' + ov('u')) + '. Avec une seule rotation, ' + T(ov('\\Omega_{j/0}')) + ' est porté par l\'axe de la figure et le produit vectoriel se réduit à un quart de tour. Avec deux rotations d\'axes différents, le vecteur rotation ' + T(ov('\\Omega_{2/0}') + '=' + ov('\\Omega_{2/1}') + '+' + ov('\\Omega_{1/0}')) + ' n\'est plus porté par un seul axe : la lecture sur une figure ne suffit plus.</p>' +
         '<p><b>Cas où la méthode graphique ne s\'applique pas :</b> vecteur constant dans ' + T('b_2') + ' et dérivé dans ' + T('b_0') + ' (deux rotations successives), ou dérivée prise dans une base qui n\'est pas reliée au vecteur par une seule rotation. On utilise alors la formule de Bour.</p>' +
         '<p>La <b>formule de Bour</b>, elle, est générale : valable pour tout vecteur et pour deux bases quelconques. La méthode graphique n\'en est qu\'un cas particulier, commode mais limité.</p></section>' +
@@ -3970,7 +4024,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       return '<h1>Rappels : application numérique</h1>' +
         card('Inverses de 2 à 9', '<p>Valeurs à connaître par cœur, avec leurs multiples des puissances de dix.</p>' +
           tbl(['Inverse', 'Valeur approchée'], [2, 3, 4, 5, 6, 7, 8, 9].map((n, i) => [T('\\dfrac{1}{' + n + '}'), T(['0{,}5', '0{,}333', '0{,}25', '0{,}2', '0{,}167', '0{,}143', '0{,}125', '0{,}111'][i])])) +
-          '<p>Division approchée : ' + T('\\dfrac{a}{b}=q+\\dfrac{r}{b}') + ' avec ' + T('a=bq+r') + '.</p>') +
+          '<p>Les inverses servent à remplacer une division par une multiplication :</p>' + D('\\dfrac{20}{7}\\approx20\\times0{,}143\\approx2{,}9')) +
+        card('Poser une division', '<p>Quand aucun inverse connu ne convient, la division se pose à la main. Le dividende s\'écrit à gauche, le diviseur à droite, séparés par la double barre (potence), et le quotient s\'écrit sous le diviseur.</p>' + OL([
+          '<b>Prendre</b> les premiers chiffres du dividende, jusqu\'à obtenir un nombre au moins égal au diviseur.',
+          '<b>Chercher</b> le plus grand chiffre ' + T('q') + ' tel que ' + T('\\text{diviseur}\\times q') + ' ne dépasse pas ce nombre, et l\'écrire au quotient.',
+          '<b>Soustraire</b> : écrire ' + T('\\text{diviseur}\\times q') + ' sous le nombre et faire la différence. Le reste est toujours plus petit que le diviseur.',
+          '<b>Abaisser</b> le chiffre suivant du dividende à droite du reste (chiffre en orange sur la figure), puis recommencer à l\'étape 2.',
+          '<b>Passer la virgule</b> : quand la virgule du dividende est franchie, écrire une virgule au quotient, puis abaisser des zéros autant que nécessaire.',
+        ]) + MF.division(756, 12, 0, '$756\\div12=63$ : $75=12\\times6+3$, puis on abaisse le $6$ : $36=12\\times3+0$.', rtext) + MF.division(9, 4, 2, '$9\\div4=2{,}25$ : $9=4\\times2+1$, puis $10=4\\times2+2$ et $20=4\\times5+0$.', rtext) + '<p><b>Contrôle</b> : ' + T('\\text{diviseur}\\times\\text{quotient}+\\text{reste}=\\text{dividende}') + '. Pour une application numérique à ' + T('10\\ \\%') + ' près, deux chiffres significatifs au quotient suffisent : arrêter la division à ce stade.</p>') +
         card('Racines et constantes', tbl(['Constante', 'Valeur', 'Arrondi utile'], [
           [T('\\sqrt2'), T('1{,}414'), T('1{,}4')], [T('\\sqrt3'), T('1{,}732'), T('1{,}7')], [T('\\sqrt5'), T('2{,}236'), T('2{,}2')], [T('\\sqrt{10}'), T('3{,}162'), T('3{,}2')],
           [T('\\pi'), T('3{,}1416'), T('3{,}14')], [T('2\\pi'), T('6{,}283'), T('6{,}3')], [T('\\dfrac1\\pi'), T('0{,}318'), T('0{,}32')], [T('\\pi^2'), T('9{,}87'), T('10')],
@@ -4073,7 +4134,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           '<p>Dans un schéma bloc, la sortie ' + T('S(p)') + ' est à droite et l\'entrée ' + T('E(p)') + ' à gauche.</p>') +
         card('Forme canonique générale', D('H(p)=\\dfrac{K\\left(1+b_1p+\\dots\\right)}{p^{\\alpha}\\left(1+a_1p+a_2p^{2}+\\dots+a_np^{n}\\right)}') +
           UL(['Le terme de plus bas degré de chaque polynôme vaut ' + T('1') + ' : numérateur et dénominateur sont <b>normalisés</b>.', T('K') + ' : gain (gain statique si ' + T('\\alpha=0') + ').', T('\\alpha') + ' : <b>classe</b>, nombre d\'intégrateurs, c\'est-à-dire puissance de ' + T('p') + ' en facteur au dénominateur.', '<b>Ordre</b> : degré du dénominateur, soit ' + T('\\alpha+n') + '.']) +
-          '<p><b>La classe n\'a d\'utilité que pour la FTBO</b> : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe. Pour la FTBF, la forme canonique (gain, ordre, ' + T('\\xi') + ', ' + T('\\omega_0') + ') reste la forme finale à viser.</p>') +
+          '<div class="rule"><b>La classe n\'a d\'utilité que pour la FTBO</b> : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe. Pour la FTBF, la forme canonique (gain, ordre, ' + T('\\xi') + ', ' + T('\\omega_0') + ') reste la forme finale à viser.</div>') +
         card('Premier ordre', D('H(p)=\\dfrac{K}{1+\\tau p}') + UL([T('K') + ' : gain statique.', T('\\tau') + ' : constante de temps, en s.', 'Pulsation de cassure : ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.'])) +
         card('Second ordre', D('H(p)=\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}\\,p+\\dfrac{p^{2}}{\\omega_0^{2}}}') +
           UL([T('K') + ' : gain statique.', T('\\xi') + ' : coefficient d\'amortissement, sans unité.', T('\\omega_0') + ' : pulsation propre non amortie, en rad/s.', ]) + '<p><b>Régimes de fonctionnement</b> selon la valeur de ' + T('\\xi') + ' :</p>' +
@@ -4192,6 +4253,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return out;
   }
   const para = (str) => {
+    if (String(str).startsWith('!! ')) return '<div class="rule">' + rtext(String(str).slice(3)) + '</div>'; // encadré orange (remarque)
     const parts = String(str).split('\n- ');
     let h = ('<p>' + rtext(parts[0]) + '</p>').replace(/<p>\s*<\/p>/g, '');
     if (parts.length > 1) h += '<ul class="quant">' + parts.slice(1).map((x) => '<li>' + rtext(x) + '</li>').join('') + '</ul>';
@@ -4268,7 +4330,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const famLabel = {};
   ORDER.forEach((t) => THEMES[t].fams.forEach(([k, l]) => { famLabel[k] = l; }));
 
-  const NEWFAMS = ['s_bo', 's_pr', 'n_unit']; // familles apparues après la première version
+  const NEWFAMS = ['s_bo', 's_pr', 'n_unit', 'n_dl']; // familles apparues après la première version
   const saved = store.get('qcm-settings', {});
   const settings = { n: saved.n || 10, mode: saved.mode || 'train', themes: saved.themes || {} };
   ORDER.forEach((t) => {

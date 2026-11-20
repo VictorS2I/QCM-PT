@@ -1642,18 +1642,18 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       ['\\dfrac{dM_{fy}}{dx}=-T_z', '\\dfrac{dM_{fy}}{dx}=+T_y', '\\dfrac{dM_{fy}}{dx}=-T_y'], 'Relation à retenir : $\\dfrac{dM_{fz}}{dx}=-T_y$ et $\\dfrac{dM_{fy}}{dx}=+T_z$.', 'math'],
 
     // ---------------- Moments quadratiques ----------------
-    ['r_quad', 'Définition du moment quadratique $I_z(S,G)$ :', 'I_z=\\displaystyle\\int_S y^2\\,dS',
-      ['I_z=\\displaystyle\\int_S z^2\\,dS', 'I_z=\\displaystyle\\int_S r^2\\,dS', 'I_z=\\displaystyle\\int_S y\\,dS'], 'Le moment quadratique par rapport à l\'axe $z$ fait intervenir la distance $y$ à cet axe : $I_z=\\int_S y^2\\,dS$.', 'math'],
-    ['r_quad', 'Définition du moment quadratique $I_y(S,G)$ :', 'I_y=\\displaystyle\\int_S z^2\\,dS',
-      ['I_y=\\displaystyle\\int_S y^2\\,dS', 'I_y=\\displaystyle\\int_S r^2\\,dS', 'I_y=\\displaystyle\\int_S z\\,dS'], 'Le moment quadratique par rapport à l\'axe $y$ fait intervenir la distance $z$ à cet axe : $I_y=\\int_S z^2\\,dS$.', 'math'],
-    ['r_quad', 'Définition du moment quadratique polaire $I_0$ :', 'I_0=\\displaystyle\\int_S r^2\\,dS',
-      ['I_0=\\displaystyle\\int_S r\\,dS', 'I_0=\\displaystyle\\int_S (y+z)^2\\,dS', 'I_0=\\displaystyle\\int_S y\\,z\\,dS'], '$r$ est la distance au point $O$ (centre de la section) : $I_0=\\int_S r^2\\,dS$.', 'math'],
-    ['r_quad', 'Relation entre moment quadratique polaire et moments quadratiques :', 'I_0=I_y+I_z',
-      ['I_0=I_y\\,I_z', 'I_0=I_y-I_z', 'I_0=\\dfrac{I_y+I_z}{2}'], 'Comme $r^2=y^2+z^2$, on obtient $I_0=I_y+I_z$.', 'math'],
+    ['r_quad', 'Définition du moment quadratique $I_{Gz}(S)$ :', 'I_{Gz}(S)=\\displaystyle\\int_S y^2\\,dS',
+      ['I_{Gz}(S)=\\displaystyle\\int_S z^2\\,dS', 'I_{Gz}(S)=\\displaystyle\\int_S r^2\\,dS', 'I_{Gz}(S)=\\displaystyle\\int_S y\\,dS'], 'Le moment quadratique par rapport à l\'axe $z$ fait intervenir la distance $y$ à cet axe : $I_{Gz}=\\int_S y^2\\,dS$.', 'math'],
+    ['r_quad', 'Définition du moment quadratique $I_{Gy}(S)$ :', 'I_{Gy}(S)=\\displaystyle\\int_S z^2\\,dS',
+      ['I_{Gy}(S)=\\displaystyle\\int_S y^2\\,dS', 'I_{Gy}(S)=\\displaystyle\\int_S r^2\\,dS', 'I_{Gy}(S)=\\displaystyle\\int_S z\\,dS'], 'Le moment quadratique par rapport à l\'axe $y$ fait intervenir la distance $z$ à cet axe : $I_{Gy}=\\int_S z^2\\,dS$.', 'math'],
+    ['r_quad', 'Définition du moment quadratique polaire $I_0$ :', 'I_0(S)=\\displaystyle\\int_S r^2\\,dS',
+      ['I_0(S)=\\displaystyle\\int_S r\\,dS', 'I_0(S)=\\displaystyle\\int_S (y+z)^2\\,dS', 'I_0(S)=\\displaystyle\\int_S y\\,z\\,dS'], '$r$ est la distance au point $O$ (centre de la section) : $I_0=\\int_S r^2\\,dS$.', 'math'],
+    ['r_quad', 'Relation entre moment quadratique polaire et moments quadratiques :', 'I_0=I_{Gy}+I_{Gz}',
+      ['I_0=I_{Gy}\\,I_{Gz}', 'I_0=I_{Gy}-I_{Gz}', 'I_0=\\dfrac{I_{Gy}+I_{Gz}}{2}'], 'Comme $r^2=y^2+z^2$, on obtient $I_0=I_{Gy}+I_{Gz}$.', 'math'],
     ['r_quad', 'Unité usuelle des moments quadratiques :', '$\\mathrm{mm^4}$',
       ['$\\mathrm{mm^2}$', '$\\mathrm{mm^3}$', '$\\mathrm{N.mm}$'], 'Intégrale d\'une surface multipliée par le carré d\'une longueur : longueur à la puissance 4.', 'text'],
-    ['r_quad', 'Théorème de Huygens pour $I_z$ au point $M$ de coordonnée $y_M$ :', 'I_z(S,M)=I_z(S,G)+S\\,y_M^{2}',
-      ['I_z(S,M)=I_z(S,G)+S\\,y_M', 'I_z(S,M)=I_z(S,G)-S\\,y_M^{2}', 'I_z(S,M)=I_z(S,G)+S^{2}\\,y_M^{2}'], 'Huygens : $I_z(S,M)=I_z(S,G)+S\\,y_M^2$, avec $y_M$ distance entre les deux axes parallèles.', 'math'],
+    ['r_quad', 'Théorème de Huygens pour $I_{Gz}$ au point $M$ de coordonnée $y_M$ :', 'I_{Mz}(S)=I_{Gz}(S)+S\\,y_M^{2}',
+      ['I_{Mz}(S)=I_{Gz}(S)+S\\,y_M', 'I_{Mz}(S)=I_{Gz}(S)-S\\,y_M^{2}', 'I_{Mz}(S)=I_{Gz}(S)+S^{2}\\,y_M^{2}'], 'Huygens : $I_{Mz}(S)=I_{Gz}(S)+S\\,y_M^2$, avec $y_M$ distance entre les deux axes parallèles.', 'math'],
 
     // ---------------- Formules du résumé ----------------
     ['r_form', 'Traction : déformation en fonction du déplacement.', '\\varepsilon_x=\\dfrac{du_x}{dx}',
@@ -1675,21 +1675,21 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     ['r_form', 'Contrainte tangentielle moyenne en cisaillement :', '\\tau=\\dfrac{T}{S}',
       ['\\tau=\\dfrac{T}{I_0}', '\\tau=T\\,S', '\\tau=\\dfrac{S}{T}'], 'Avec $T$ valant $T_y$ ou $T_z$.', 'math'],
     ['r_form', 'Contrainte tangentielle en torsion à la distance $r$ de l\'axe :', '\\tau(r)=\\dfrac{M_t}{I_0}\\,r',
-      ['\\tau(r)=\\dfrac{M_t}{I_0\\,r}', '\\tau(r)=\\dfrac{M_t}{S}\\,r', '\\tau(r)=\\dfrac{M_t}{I_z}\\,r'], 'Contrainte nulle sur l\'axe, maximale en périphérie, avec le moment quadratique polaire $I_0$.', 'math'],
-    ['r_form', 'Contrainte normale en flexion simple à la cote $y$ :', '\\sigma(y)=-\\dfrac{M_{fz}}{I_z}\\,y',
-      ['\\sigma(y)=+\\dfrac{M_{fz}}{I_z}\\,y', '\\sigma(y)=-\\dfrac{M_{fz}}{I_0}\\,y', '\\sigma(y)=-\\dfrac{M_{fz}}{S}\\,y'], 'Contrainte nulle sur la fibre neutre, maximale sur les fibres extrêmes, avec le moment quadratique $I_z$.', 'math'],
+      ['\\tau(r)=\\dfrac{M_t}{I_0\\,r}', '\\tau(r)=\\dfrac{M_t}{S}\\,r', '\\tau(r)=\\dfrac{M_t}{I_{Gz}}\\,r'], 'Contrainte nulle sur l\'axe, maximale en périphérie, avec le moment quadratique polaire $I_0$.', 'math'],
+    ['r_form', 'Contrainte normale en flexion simple à la cote $y$ :', '\\sigma(y)=-\\dfrac{M_{fz}}{I_{Gz}}\\,y',
+      ['\\sigma(y)=+\\dfrac{M_{fz}}{I_{Gz}}\\,y', '\\sigma(y)=-\\dfrac{M_{fz}}{I_0}\\,y', '\\sigma(y)=-\\dfrac{M_{fz}}{S}\\,y'], 'Contrainte nulle sur la fibre neutre, maximale sur les fibres extrêmes, avec le moment quadratique $I_{Gz}$.', 'math'],
     ['r_form', 'Traction : relation entre le déplacement et l\'effort normal.', '\\dfrac{du_x}{dx}=\\dfrac{N}{E\\,S}',
       ['\\dfrac{du_x}{dx}=\\dfrac{N}{G\\,S}', '\\dfrac{du_x}{dx}=\\dfrac{N}{E\\,I_0}', '\\dfrac{du_x}{dx}=\\dfrac{N\\,E}{S}'], 'On combine $\\varepsilon_x=\\dfrac{du_x}{dx}$, $\\sigma=E\\varepsilon_x$ et $\\sigma=\\dfrac{N}{S}$.', 'math'],
     ['r_form', 'Torsion : relation entre la rotation relative et le moment de torsion.', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{G\\,I_0}',
-      ['\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{E\\,I_0}', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{G\\,S}', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{G\\,I_z}'], 'On combine $\\gamma_x=\\dfrac{d\\theta_x}{dx}$, $\\tau=G\\gamma_x r$ et $\\tau=\\dfrac{M_t}{I_0}r$.', 'math'],
-    ['r_form', 'Flexion simple : relation entre la rotation de section et le moment de flexion.', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{E\\,I_z}',
-      ['\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{G\\,I_z}', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{E\\,I_0}', '\\dfrac{d\\theta_z}{dx}=-\\dfrac{M_{fz}}{E\\,I_z}'], 'Comme $\\theta_z=\\dfrac{du_y}{dx}$, cette relation s\'écrit aussi $\\dfrac{d^2u_y}{dx^2}=\\dfrac{M_{fz}}{E\\,I_z}$.', 'math'],
+      ['\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{E\\,I_0}', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{G\\,S}', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{G\\,I_{Gz}}'], 'On combine $\\gamma_x=\\dfrac{d\\theta_x}{dx}$, $\\tau=G\\gamma_x r$ et $\\tau=\\dfrac{M_t}{I_0}r$.', 'math'],
+    ['r_form', 'Flexion simple : relation entre la rotation de section et le moment de flexion.', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{E\\,I_{Gz}}',
+      ['\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{G\\,I_{Gz}}', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{E\\,I_0}', '\\dfrac{d\\theta_z}{dx}=-\\dfrac{M_{fz}}{E\\,I_{Gz}}'], 'Comme $\\theta_z=\\dfrac{du_y}{dx}$, cette relation s\'écrit aussi $\\dfrac{d^2u_y}{dx^2}=\\dfrac{M_{fz}}{E\\,I_{Gz}}$.', 'math'],
     ['r_form', 'Allongement d\'une barre de longueur $L_0$ soumise à un effort normal constant $N$ :', '\\Delta L=\\dfrac{N}{E\\,S}\\,L_0',
       ['\\Delta L=\\dfrac{N}{G\\,S}\\,L_0', '\\Delta L=\\dfrac{N}{E\\,I_0}\\,L_0', '\\Delta L=\\dfrac{N\\,S}{E}\\,L_0'], 'Intégration de $\\dfrac{du_x}{dx}=\\dfrac{N}{ES}$ sur la longueur, $N$ étant constant.', 'math'],
     ['r_form', 'Angle de torsion d\'un arbre de longueur $L$ soumis à un moment de torsion constant $M_t$ :', '\\Delta\\theta_x=\\dfrac{M_t}{G\\,I_0}\\,L',
       ['\\Delta\\theta_x=\\dfrac{M_t}{E\\,I_0}\\,L', '\\Delta\\theta_x=\\dfrac{M_t}{G\\,S}\\,L', '\\Delta\\theta_x=\\dfrac{M_t}{G\\,I_0}\\,L^{2}'], 'Intégration de $\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{GI_0}$ sur la longueur, $M_t$ étant constant.', 'math'],
-    ['r_form', 'Équation de la déformée en flexion simple :', 'M_{fz}=E\\,I_z\\,u_y\'\'(x)',
-      ['M_{fz}=G\\,I_z\\,u_y\'\'(x)', 'M_{fz}=E\\,I_z\\,u_y\'(x)', 'M_{fz}=E\\,S\\,u_y\'\'(x)'], 'Déduite de $\\theta_z=u_y\'$ et de $\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{EI_z}$.', 'math'],
+    ['r_form', 'Équation de la déformée en flexion simple :', 'M_{fz}=E\\,I_{Gz}\\,u_y\'\'(x)',
+      ['M_{fz}=G\\,I_{Gz}\\,u_y\'\'(x)', 'M_{fz}=E\\,I_{Gz}\\,u_y\'(x)', 'M_{fz}=E\\,S\\,u_y\'\'(x)'], 'Déduite de $\\theta_z=u_y\'$ et de $\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{EI_{Gz}}$.', 'math'],
     ['r_form', 'Pourquoi les expressions simplifiées $\\Delta L=\\dfrac{N}{ES}L_0$ et $\\Delta\\theta_x=\\dfrac{M_t}{GI_0}L$ sont-elles à utiliser avec prudence ?',
       'Elles supposent $N$ (ou $M_t$) constant le long de la poutre, ce qui permet de le sortir de l\'intégrale',
       ['Elles ne sont valables que pour un acier', 'Elles supposent que la section est carrée', 'Elles ne sont valables qu\'en dehors du domaine élastique'],
@@ -1850,12 +1850,12 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       const all = shuffle([{ c: good, ok: true }].concat(shuffle(wrong).slice(0, 3).map((c) => ({ c, ok: false }))));
       return { theme: 'rdm', family: 'r_quad', famLabel: FAM.r_quad, text, math: null, choiceKind: 'math', choices: all.map((x) => x.c), correctIndex: all.findIndex((x) => x.ok), steps: ['$$\\boxed{' + good + '}$$', why] };
     };
-    if (kind === 'rect_z') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_z$ ?', 'I_z=\\dfrac{b\\,h^{3}}{12}', ['I_z=\\dfrac{b^{3}\\,h}{12}', 'I_z=\\dfrac{b\\,h^{3}}{3}', 'I_z=\\dfrac{b\\,h^{3}}{24}', 'I_z=\\dfrac{b\\,h^{2}}{12}'], '$I_z=\\int y^2\\,dS$ : la dimension selon $y$ (la hauteur $h$) est au cube.');
-    if (kind === 'rect_y') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_y$ ?', 'I_y=\\dfrac{h\\,b^{3}}{12}', ['I_y=\\dfrac{b\\,h^{3}}{12}', 'I_y=\\dfrac{h\\,b^{3}}{3}', 'I_y=\\dfrac{h\\,b^{3}}{24}', 'I_y=\\dfrac{h\\,b^{2}}{12}'], '$I_y=\\int z^2\\,dS$ : la dimension selon $z$ (la largeur $b$) est au cube.');
-    if (kind === 'circ') return mk('Section circulaire pleine de diamètre $D$. Quel est $I_z$ (égal à $I_y$) ?', 'I_z=\\dfrac{\\pi\\,D^{4}}{64}', ['I_z=\\dfrac{\\pi\\,D^{4}}{32}', 'I_z=\\dfrac{\\pi\\,D^{4}}{16}', 'I_z=\\dfrac{\\pi\\,D^{2}}{64}', 'I_z=\\dfrac{\\pi\\,D^{4}}{128}'], 'Par symétrie $I_y=I_z$, et $I_0=I_y+I_z=\\dfrac{\\pi D^4}{32}$, d\'où $I_z=\\dfrac{\\pi D^4}{64}$.');
-    if (kind === 'circ0') return mk('Section circulaire pleine de diamètre $D$. Quel est le moment quadratique polaire $I_0$ ?', 'I_0=\\dfrac{\\pi\\,D^{4}}{32}', ['I_0=\\dfrac{\\pi\\,D^{4}}{64}', 'I_0=\\dfrac{\\pi\\,D^{4}}{16}', 'I_0=\\dfrac{\\pi\\,D^{2}}{32}', 'I_0=\\dfrac{\\pi\\,D^{3}}{32}'], '$I_0=I_y+I_z=2\\times\\dfrac{\\pi D^4}{64}=\\dfrac{\\pi D^4}{32}$.');
-    if (kind === 'circcreux') return mk('Section circulaire creuse de diamètre extérieur $D$ et de diamètre intérieur $d$. Quel est $I_z$ ?', 'I_z=\\dfrac{\\pi\\,(D^{4}-d^{4})}{64}', ['I_z=\\dfrac{\\pi\\,(D-d)^{4}}{64}', 'I_z=\\dfrac{\\pi\\,(D^{4}+d^{4})}{64}', 'I_z=\\dfrac{\\pi\\,(D^{2}-d^{2})^{2}}{64}', 'I_z=\\dfrac{\\pi\\,(D^{4}-d^{4})}{32}'], 'Section creuse : moment quadratique du disque plein moins celui du disque retiré.');
-    return mk('Section rectangulaire creuse : rectangle extérieur $b\\times h$ (largeur $b$ selon $z$, hauteur $h$ selon $y$), rectangle intérieur $b_i\\times h_i$. Quel est $I_z$ ?', 'I_z=\\dfrac{b\\,h^{3}-b_i\\,h_i^{3}}{12}', ['I_z=\\dfrac{(b-b_i)(h-h_i)^{3}}{12}', 'I_z=\\dfrac{b\\,h^{3}+b_i\\,h_i^{3}}{12}', 'I_z=\\dfrac{b^{3}h-b_i^{3}h_i}{12}', 'I_z=\\dfrac{b\\,h^{3}-b_i\\,h_i^{3}}{6}'], 'Section creuse : moment quadratique du rectangle plein moins celui du rectangle retiré (même axe $G$).');
+    if (kind === 'rect_z') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_{Gz}$ ?', 'I_{Gz}=\\dfrac{b\\,h^{3}}{12}', ['I_{Gz}=\\dfrac{b^{3}\\,h}{12}', 'I_{Gz}=\\dfrac{b\\,h^{3}}{3}', 'I_{Gz}=\\dfrac{b\\,h^{3}}{24}', 'I_{Gz}=\\dfrac{b\\,h^{2}}{12}'], '$I_{Gz}=\\int y^2\\,dS$ : la dimension selon $y$ (la hauteur $h$) est au cube.');
+    if (kind === 'rect_y') return mk('Section rectangulaire de largeur $b$ (selon $z$) et de hauteur $h$ (selon $y$). Quel est $I_{Gy}$ ?', 'I_{Gy}=\\dfrac{h\\,b^{3}}{12}', ['I_{Gy}=\\dfrac{b\\,h^{3}}{12}', 'I_{Gy}=\\dfrac{h\\,b^{3}}{3}', 'I_{Gy}=\\dfrac{h\\,b^{3}}{24}', 'I_{Gy}=\\dfrac{h\\,b^{2}}{12}'], '$I_{Gy}=\\int z^2\\,dS$ : la dimension selon $z$ (la largeur $b$) est au cube.');
+    if (kind === 'circ') return mk('Section circulaire pleine de diamètre $D$. Quel est $I_{Gz}$ (égal à $I_{Gy}$) ?', 'I_{Gz}=\\dfrac{\\pi\\,D^{4}}{64}', ['I_{Gz}=\\dfrac{\\pi\\,D^{4}}{32}', 'I_{Gz}=\\dfrac{\\pi\\,D^{4}}{16}', 'I_{Gz}=\\dfrac{\\pi\\,D^{2}}{64}', 'I_{Gz}=\\dfrac{\\pi\\,D^{4}}{128}'], 'Par symétrie $I_{Gy}=I_{Gz}$, et $I_0=I_{Gy}+I_{Gz}=\\dfrac{\\pi D^4}{32}$, d\'où $I_{Gz}=\\dfrac{\\pi D^4}{64}$.');
+    if (kind === 'circ0') return mk('Section circulaire pleine de diamètre $D$. Quel est le moment quadratique polaire $I_0$ ?', 'I_0=\\dfrac{\\pi\\,D^{4}}{32}', ['I_0=\\dfrac{\\pi\\,D^{4}}{64}', 'I_0=\\dfrac{\\pi\\,D^{4}}{16}', 'I_0=\\dfrac{\\pi\\,D^{2}}{32}', 'I_0=\\dfrac{\\pi\\,D^{3}}{32}'], '$I_0=I_{Gy}+I_{Gz}=2\\times\\dfrac{\\pi D^4}{64}=\\dfrac{\\pi D^4}{32}$.');
+    if (kind === 'circcreux') return mk('Section circulaire creuse de diamètre extérieur $D$ et de diamètre intérieur $d$. Quel est $I_{Gz}$ ?', 'I_{Gz}=\\dfrac{\\pi\\,(D^{4}-d^{4})}{64}', ['I_{Gz}=\\dfrac{\\pi\\,(D-d)^{4}}{64}', 'I_{Gz}=\\dfrac{\\pi\\,(D^{4}+d^{4})}{64}', 'I_{Gz}=\\dfrac{\\pi\\,(D^{2}-d^{2})^{2}}{64}', 'I_{Gz}=\\dfrac{\\pi\\,(D^{4}-d^{4})}{32}'], 'Section creuse : moment quadratique du disque plein moins celui du disque retiré.');
+    return mk('Section rectangulaire creuse : rectangle extérieur $b\\times h$ (largeur $b$ selon $z$, hauteur $h$ selon $y$), rectangle intérieur $b_i\\times h_i$. Quel est $I_{Gz}$ ?', 'I_{Gz}=\\dfrac{b\\,h^{3}-b_i\\,h_i^{3}}{12}', ['I_{Gz}=\\dfrac{(b-b_i)(h-h_i)^{3}}{12}', 'I_{Gz}=\\dfrac{b\\,h^{3}+b_i\\,h_i^{3}}{12}', 'I_{Gz}=\\dfrac{b^{3}h-b_i^{3}h_i}{12}', 'I_{Gz}=\\dfrac{b\\,h^{3}-b_i\\,h_i^{3}}{6}'], 'Section creuse : moment quadratique du rectangle plein moins celui du rectangle retiré (même axe $G$).');
   }
   function qQuadNum() {
     const b = pick([20, 30, 40, 50]); const h = pick([40, 60, 80, 100]);
@@ -1864,8 +1864,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const used = new Set([fmtNum(Iz)]); const wrong = [];
     for (const w of shuffle(alt)) { const s = fmtNum(w); if (!used.has(s) && wrong.length < 3) { used.add(s); wrong.push(w); } }
     const all = shuffle([{ x: Iz, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
-    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Quelle est la valeur de $I_z$ pour une section rectangulaire de largeur $b=' + b + '$ mm (selon $z$) et de hauteur $h=' + h + '$ mm (selon $y$) ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
-      steps: ['$$I_z=\\dfrac{b\\,h^{3}}{12}=\\dfrac{' + b + '\\times' + h + '^{3}}{12}=\\boxed{' + fmtNum(Iz) + '\\ \\mathrm{mm^4}}$$'] });
+    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Quelle est la valeur de $I_{Gz}$ pour une section rectangulaire de largeur $b=' + b + '$ mm (selon $z$) et de hauteur $h=' + h + '$ mm (selon $y$) ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
+      steps: ['$$I_{Gz}=\\dfrac{b\\,h^{3}}{12}=\\dfrac{' + b + '\\times' + h + '^{3}}{12}=\\boxed{' + fmtNum(Iz) + '\\ \\mathrm{mm^4}}$$'] });
   }
   function qHuygens() {
     const b = pick([20, 30, 40]); const h = pick([40, 60]); const yM = pick([10, 20, 30, 40]);
@@ -1874,8 +1874,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const used = new Set([fmtNum(I)]); const wrong = [];
     for (const w of shuffle(alt)) { const s = fmtNum(w); if (w > 0 && !used.has(s) && wrong.length < 3) { used.add(s); wrong.push(w); } }
     const all = shuffle([{ x: I, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
-    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Une section rectangulaire $' + b + '\\times' + h + '$ mm² (hauteur ' + h + ' mm selon $y$) a pour moment quadratique $I_z(S,G)=' + fmtNum(Iz) + '$ mm⁴. Quel est $I_z(S,M)$ au point $M$ tel que $y_M=' + yM + '$ mm ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
-      steps: ['Aire : $S=' + b + '\\times' + h + '=' + S + '$ mm².', '$$I_z(S,M)=I_z(S,G)+S\\,y_M^2=' + fmtNum(Iz) + '+' + S + '\\times' + yM + '^2=\\boxed{' + fmtNum(I) + '\\ \\mathrm{mm^4}}$$'] });
+    return NUM({ family: 'r_quad', famLabel: FAM.r_quad, text: 'Une section rectangulaire $' + b + '\\times' + h + '$ mm² (hauteur ' + h + ' mm selon $y$) a pour moment quadratique $I_{Gz}(S)=' + fmtNum(Iz) + '$ mm⁴. Quel est $I_{Mz}(S)$ au point $M$ tel que $y_M=' + yM + '$ mm ?', choices: all.map((o) => '$' + fmtNum(o.x) + '\\ \\mathrm{mm^4}$'), correctIndex: all.findIndex((o) => o.ok),
+      steps: ['Aire : $S=' + b + '\\times' + h + '=' + S + '$ mm².', '$$I_{Mz}(S)=I_{Gz}(S)+S\\,y_M^2=' + fmtNum(Iz) + '+' + S + '\\times' + yM + '^2=\\boxed{' + fmtNum(I) + '\\ \\mathrm{mm^4}}$$'] });
   }
 
 
@@ -1903,7 +1903,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const UNITS = [
     ['\\sigma', 'contrainte normale', 'MPa'], ['\\tau', 'contrainte tangentielle', 'MPa'], ['R_e', 'limite élastique', 'MPa'], ['R_m', 'limite à la rupture', 'MPa'], ['R_g', 'résistance au glissement', 'MPa'],
     ['E', 'module d\'Young', 'GPa'], ['G', 'module de Coulomb', 'GPa'],
-    ['I_z', 'moment quadratique', 'mm4'], ['I_y', 'moment quadratique', 'mm4'], ['I_0', 'moment quadratique polaire', 'mm4'],
+    ['I_{Gz}', 'moment quadratique', 'mm4'], ['I_{Gy}', 'moment quadratique', 'mm4'], ['I_0', 'moment quadratique polaire', 'mm4'],
     ['\\varepsilon_x', 'déformation longitudinale', '-'], ['\\nu', 'coefficient de Poisson', '-'],
     ['\\gamma_x', 'rotation relative', 'rad/m'], ['S', 'aire de la section', 'mm2'],
   ];
@@ -1935,16 +1935,16 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       F: ['Matériau anisotrope par nature', 'Comportement plastique dès les faibles charges', 'Grandes déformations calculées par une loi non linéaire', 'Les sections droites se gauchissent librement en flexion', 'Dimensions de la section du même ordre que la longueur', 'La répartition locale des efforts d\'application est déterminante en tout point'] },
     torsion: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour un arbre en torsion ?',
       T: ['La contrainte tangentielle est nulle sur l\'axe', 'La contrainte tangentielle est maximale en périphérie', 'La contrainte tangentielle croît linéairement avec $r$', 'Le module de Coulomb $G$ intervient', 'Le moment quadratique polaire $I_0$ intervient'],
-      F: ['La contrainte tangentielle est uniforme sur la section', 'Le module d\'Young $E$ intervient dans la loi de Hooke en torsion', 'Seule la contrainte normale $\\sigma$ est non nulle', 'Le moment quadratique $I_z$ intervient'] },
+      F: ['La contrainte tangentielle est uniforme sur la section', 'Le module d\'Young $E$ intervient dans la loi de Hooke en torsion', 'Seule la contrainte normale $\\sigma$ est non nulle', 'Le moment quadratique $I_{Gz}$ intervient'] },
     flexion: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour une poutre en flexion simple ?',
-      T: ['La contrainte normale varie linéairement avec $y$', 'La contrainte normale est nulle sur la fibre neutre', 'La contrainte normale est maximale sur les fibres extrêmes', 'La contrainte tangentielle est négligeable devant la contrainte normale', 'Le module d\'Young $E$ et le moment quadratique $I_z$ interviennent'],
+      T: ['La contrainte normale varie linéairement avec $y$', 'La contrainte normale est nulle sur la fibre neutre', 'La contrainte normale est maximale sur les fibres extrêmes', 'La contrainte tangentielle est négligeable devant la contrainte normale', 'Le module d\'Young $E$ et le moment quadratique $I_{Gz}$ interviennent'],
       F: ['La contrainte normale est uniforme sur la section', 'La loi de Hooke fait intervenir le module de Coulomb $G$', 'La contrainte tangentielle domine la contrainte normale', 'Le moment quadratique polaire $I_0$ intervient dans $\\sigma(y)$'] },
     traction: { fam: 'r_form', text: 'Quelles affirmations sont exactes pour une barre en traction ?',
       T: ['La contrainte normale est uniforme sur la section', 'La contrainte normale vaut $\\dfrac{N}{S}$', 'Le module d\'Young $E$ intervient', 'L\'allongement est proportionnel à la longueur initiale'],
       F: ['Le module de Coulomb $G$ intervient', 'La contrainte dépend du moment quadratique polaire $I_0$', 'Les sections droites tournent les unes par rapport aux autres', 'L\'allongement est indépendant de l\'aire de la section'] },
     quad: { fam: 'r_quad', text: 'Quelles affirmations sont exactes sur les moments quadratiques ?',
-      T: ['L\'unité usuelle est le $\\mathrm{mm^4}$', '$I_0=I_y+I_z$', '$I_z$ se calcule avec la distance $y$ à l\'axe $z$', 'Huygens fait intervenir l\'aire $S$ et le carré de la distance entre deux axes parallèles', 'Pour une section creuse, on retranche le moment quadratique de la partie évidée'],
-      F: ['L\'unité usuelle est le $\\mathrm{mm^2}$', '$I_0=I_y\\,I_z$', 'Huygens ne s\'applique qu\'entre deux axes perpendiculaires', 'Pour une section creuse, on additionne les moments quadratiques des sections extérieure et intérieure'] },
+      T: ['L\'unité usuelle est le $\\mathrm{mm^4}$', '$I_0=I_{Gy}+I_{Gz}$', '$I_{Gz}$ se calcule avec la distance $y$ à l\'axe $z$', 'Huygens fait intervenir l\'aire $S$ et le carré de la distance entre deux axes parallèles', 'Pour une section creuse, on retranche le moment quadratique de la partie évidée'],
+      F: ['L\'unité usuelle est le $\\mathrm{mm^2}$', '$I_0=I_{Gy}\\,I_{Gz}$', 'Huygens ne s\'applique qu\'entre deux axes perpendiculaires', 'Pour une section creuse, on additionne les moments quadratiques des sections extérieure et intérieure'] },
   };
   function multiPool(name) {
     const P = POOLS[name];
@@ -1993,8 +1993,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     [/R_\{?e\}?/, 'R_e', 'limite élastique', 'MPa'],
     [/R_\{?m\}?/, 'R_m', 'limite à la rupture', 'MPa'],
     [/R_\{?g\}?/, 'R_g', 'résistance au glissement', 'MPa'],
-    [/I_\{?z\}?/, 'I_z', 'moment quadratique par rapport à l\'axe $z$', 'mm4'],
-    [/I_\{?y\}?/, 'I_y', 'moment quadratique par rapport à l\'axe $y$', 'mm4'],
+    [/I_\{?Mz\}?/, 'I_{Mz}', 'moment quadratique par rapport à l\'axe $z$ passant par $M$', 'mm4'],
+    [/I_\{?G?z\}?/, 'I_{Gz}', 'moment quadratique par rapport à l\'axe $z$ passant par $G$', 'mm4'],
+    [/I_\{?G?y\}?/, 'I_{Gy}', 'moment quadratique par rapport à l\'axe $y$ passant par $G$', 'mm4'],
     [/I_\{?0\}?/, 'I_0', 'moment quadratique polaire', 'mm4'],
     [/b_i/, 'b_i', 'largeur du rectangle intérieur', 'mm'],
     [/h_i/, 'h_i', 'hauteur du rectangle intérieur', 'mm'],
@@ -2741,7 +2742,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   function tFlexion() {
     const M = pick([100, 200, 300, 500]), b = pick([20, 30, 40]), h = pick([20, 30, 40, 60]); const val = 6 * M * 1000 / (b * h * h);
     return { text: 'Une poutre de section rectangulaire ($b=' + b + '$ mm, $h=' + h + '$ mm) subit un moment de flexion $M=' + M + '$ N.m. Quelle est la contrainte normale maximale $\\sigma_{max}=\\dfrac{6M}{b\\,h^2}$ ?', val, unit: 'MPa',
-      steps: ['Méthode : $\\sigma_{max}=\\dfrac{M}{I_z}\\dfrac{h}{2}$ avec $I_z=\\dfrac{bh^3}{12}$ donne $\\dfrac{6M}{bh^2}$. Convertir $M$ en N.mm.', '$b\\,h^2=' + b + '\\times' + h * h + '=' + b * h * h + '$ mm³ ; $6M=' + 6 * M * 1000 + '$ N.mm.', '$\\sigma_{max}=\\dfrac{' + 6 * M * 1000 + '}{' + b * h * h + '}\\approx' + fmt(val) + '$ MPa.'], aid: 'Convertir $M$ en N.mm : $1$ N.m $=10^3$ N.mm.', bad: [val * 10, val / 10, val * 2] };
+      steps: ['Méthode : $\\sigma_{max}=\\dfrac{M}{I_{Gz}}\\dfrac{h}{2}$ avec $I_{Gz}=\\dfrac{bh^3}{12}$ donne $\\dfrac{6M}{bh^2}$. Convertir $M$ en N.mm.', '$b\\,h^2=' + b + '\\times' + h * h + '=' + b * h * h + '$ mm³ ; $6M=' + 6 * M * 1000 + '$ N.mm.', '$\\sigma_{max}=\\dfrac{' + 6 * M * 1000 + '}{' + b * h * h + '}\\approx' + fmt(val) + '$ MPa.'], aid: 'Convertir $M$ en N.mm : $1$ N.m $=10^3$ N.mm.', bad: [val * 10, val / 10, val * 2] };
   }
   function tTorsion() {
     const Mt = pick([50, 100, 200, 500]), D = pick([20, 25, 30, 40]); const val = 16 * Mt * 1000 / (Math.PI * D * D * D);
@@ -3850,13 +3851,13 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         '<ul><li>' + T('N') + ' : effort normal d\'axe ' + T('x') + '</li><li>' + T('T_y,\\ T_z') + ' : efforts tranchants selon ' + T('y') + ' et ' + T('z') + '</li><li>' + T('M_t') + ' : moment de torsion autour de ' + T('x') + '</li><li>' + T('M_{fy},\\ M_{fz}') + ' : moments de flexion autour de ' + T('y') + ' et ' + T('z') + '</li></ul>' +
         D('\\{\\mathcal{T}_{coh}\\}_{G(x)}=-\\{\\mathcal{T}_{ext\\to S_1}\\}_{G(x)}=\\{\\mathcal{T}_{ext\\to S_2}\\}_{G(x)}') +
         D('\\dfrac{dM_{fz}}{dx}=-T_y\\qquad\\dfrac{dM_{fy}}{dx}=+T_z') + '</section>' +
-        '<section class="card"><h2>Moments quadratiques</h2>' + D('I_z=\\int_S y^2\\,dS\\qquad I_y=\\int_S z^2\\,dS\\qquad I_0=\\int_S r^2\\,dS=I_y+I_z') +
-        '<p>Unité usuelle : ' + T('\\mathrm{mm^4}') + '.</p>' + D('\\text{Huygens :}\\quad I_z(S,M)=I_z(S,G)+S\\,y_M^2') +
-        tbl([row('Rectangle ' + T('b\\times h') + ' (' + T('b') + ' selon ' + T('z') + ', ' + T('h') + ' selon ' + T('y') + ')', T('I_z=\\dfrac{bh^3}{12}\\quad I_y=\\dfrac{hb^3}{12}')), row('Cercle plein ' + T('D'), T('I_z=I_y=\\dfrac{\\pi D^4}{64}\\quad I_0=\\dfrac{\\pi D^4}{32}')), row('Cercle creux ' + T('D,\\ d'), T('I_z=\\dfrac{\\pi(D^4-d^4)}{64}')), row('Rectangle creux', T('I_z=\\dfrac{bh^3-b_ih_i^3}{12}'))]) + '</section>' +
+        '<section class="card"><h2>Moments quadratiques</h2>' + D('I_{Gz}(S)=\\int_S y^2\\,dS') + D('I_{Gy}(S)=\\int_S z^2\\,dS') + D('I_0(S)=\\int_S r^2\\,dS=I_{Gy}(S)+I_{Gz}(S)') +
+        '<p>Unité usuelle : ' + T('\\mathrm{mm^4}') + '.</p>' + D('\\text{Huygens :}\\quad I_{Mz}(S)=I_{Gz}(S)+S\\,y_M^2') +
+        tbl([row('Rectangle ' + T('b\\times h') + ' (' + T('b') + ' selon ' + T('z') + ', ' + T('h') + ' selon ' + T('y') + ')', T('I_{Gz}=\\dfrac{bh^3}{12}\\quad I_{Gy}=\\dfrac{hb^3}{12}')), row('Cercle plein ' + T('D'), T('I_{Gz}=I_{Gy}=\\dfrac{\\pi D^4}{64}\\quad I_0=\\dfrac{\\pi D^4}{32}')), row('Cercle creux ' + T('D,\\ d'), T('I_{Gz}=\\dfrac{\\pi(D^4-d^4)}{64}')), row('Rectangle creux', T('I_{Gz}=\\dfrac{bh^3-b_ih_i^3}{12}'))]) + '</section>' +
         sol('Traction, compression', [1, 0, 0, 0, 0, 0], [['Déformation', '\\varepsilon_x=\\dfrac{du_x}{dx}'], ['Loi de Hooke', '\\sigma=E\\varepsilon_x'], ['Contrainte', '\\sigma=\\dfrac{N}{S}'], ['Déplacement', '\\dfrac{du_x}{dx}=\\dfrac{N}{ES}'], ['Allongement', '\\Delta L=\\dfrac{N}{ES}L_0']]) +
         sol('Cisaillement', [0, 1, 1, 0, 0, 0], [['Loi de Hooke', '\\tau=G\\gamma_g'], ['Contrainte', '\\tau=\\dfrac{T}{S}\\quad(T=T_y\\text{ ou }T_z)']]) +
         sol('Torsion', [0, 0, 0, 1, 0, 0], [['Déformation', '\\gamma_x=\\dfrac{d\\theta_x}{dx}'], ['Loi de Hooke', '\\tau(r)=G\\gamma_x r'], ['Contrainte', '\\tau(r)=\\dfrac{M_t}{I_0}r'], ['Rotation relative', '\\dfrac{d\\theta_x}{dx}=\\dfrac{M_t}{GI_0}'], ['Angle de torsion', '\\Delta\\theta_x=\\dfrac{M_t}{GI_0}L']]) +
-        sol('Flexion simple', [0, 1, 0, 0, 0, 1], [['Déformation', '\\varepsilon_x=-y\\dfrac{d\\theta_z}{dx}'], ['Loi de Hooke', '\\sigma=E\\varepsilon_x,\\quad\\tau\\approx0'], ['Contrainte', '\\sigma(y)=-\\dfrac{M_{fz}}{I_z}y,\\quad\\tau=\\dfrac{T_y}{S}\\ll\\sigma'], ['Rotation de section', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{EI_z}'], ['Déformée', 'M_{fz}=E\\,I_z\\,u_y\'\'(x)']]) +
+        sol('Flexion simple', [0, 1, 0, 0, 0, 1], [['Déformation', '\\varepsilon_x=-y\\dfrac{d\\theta_z}{dx}'], ['Loi de Hooke', '\\sigma=E\\varepsilon_x,\\quad\\tau\\approx0'], ['Contrainte', '\\sigma(y)=-\\dfrac{M_{fz}}{I_{Gz}}y,\\quad\\tau=\\dfrac{T_y}{S}\\ll\\sigma'], ['Rotation de section', '\\dfrac{d\\theta_z}{dx}=\\dfrac{M_{fz}}{EI_{Gz}}'], ['Déformée', 'M_{fz}=E\\,I_{Gz}\\,u_y\'\'(x)']]) +
         '<p class="hint">En traction et en torsion, les expressions simplifiées supposent l\'effort de cohésion constant. Sinon, il faut l\'intégrer en tenant compte de sa dépendance en ' + T('x') + '.</p>' +
         '<section class="card"><h2>Vocabulaire et valeurs usuelles</h2><ul><li>' + T('\\sigma') + ' : contrainte normale ; ' + T('\\tau') + ' : contrainte tangentielle</li><li>' + T('\\varepsilon_\\bullet') + ' : déformation selon ' + T('\\bullet') + ' (sans unité) ; ' + T('\\gamma_\\bullet') + ' : rotation relative autour de ' + T('\\bullet') + ' (' + T('\\mathrm{rad/m}') + ')</li><li>' + T('E') + ' : module d\'Young (GPa) ; ' + T('G') + ' : module de Coulomb (GPa), ' + T('G\\approx0{,}4E') + '</li><li>' + T('\\nu') + ' : coefficient de Poisson</li><li>' + T('R_e') + ' : limite élastique (MPa) ; ' + T('R_m') + ' : limite à la rupture (MPa) ; ' + T('R_g') + ' : résistance au glissement (MPa), ' + T('R_g\\approx0{,}7R_e') + '</li></ul>' +
         '<table class="rtab center"><tr><th></th><th>' + T('E') + ' (GPa)</th><th>' + T('G') + ' (GPa)</th><th>' + T('\\nu') + '</th><th>' + T('R_e') + ' (MPa)</th></tr><tr><th>Acier</th><td>210</td><td>80</td><td>0,3</td><td>450</td></tr><tr><th>Aluminium</th><td>70</td><td>26</td><td>0,3</td><td>250</td></tr></table></section>';

@@ -717,6 +717,17 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return { steps: ex, baseTex: E.polyTex(res) };
   }
 
+  // Produit vectoriel de deux vecteurs d'une même base : règle de la main droite, suite positive ou négative
+  function sameBaseRule(u, v) {
+    const U = vtex(u), V = vtex(v), b = u.b;
+    if (u.i === v.i) return 'Le produit vectoriel d\'un vecteur par lui-même est nul.';
+    const k = 3 - u.i - v.i, W = E.vecName(b, k);
+    const suite = [0, 1, 2, 0, 1].map((i) => E.vecName(b, i)).join('\\ ');
+    if ((u.i + 1) % 3 === v.i) {
+      return 'Dans la suite $' + suite + '$, ' + I(U) + ' puis ' + I(V) + ' se suivent dans le sens direct (suite positive) : le résultat est $+$ ' + I(W) + '.';
+    }
+    return 'Dans la suite $' + suite + '$, ' + I(V) + ' puis ' + I(U) + ' se suivent dans le sens direct : ici les indices sont intervertis (suite négative), donc le résultat est $-$ ' + I(W) + '.';
+  }
   function explainCross(u, v, bases, outBase) {
     const ex = [];
     const d = decompInfo(u, v, bases);
@@ -724,14 +735,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const resV = E.cross(bases[u.b][u.i], bases[v.b][v.i]);
     const resTex = E.vecResultTex(resV, bases, outBase);
     if (d.same) {
-      ex.push('Les deux vecteurs appartiennent à la même base orthonormée directe $' + baseName(u.b) + '$ : permutation circulaire $\\overrightarrow{x}\\to\\overrightarrow{y}\\to\\overrightarrow{z}\\to\\overrightarrow{x}$, signe $+$ dans le sens direct, $-$ dans le sens inverse.');
+      ex.push('Les deux vecteurs appartiennent à la même base orthonormée directe $' + baseName(u.b) + '$ : pas de développement, on applique la règle de la main droite (pouce ' + I(U) + ', index ' + I(V) + ', majeur le résultat).');
+      ex.push(sameBaseRule(u, v));
       ex.push(M(wedgeTex(U, V) + ' = ' + resTex));
-      if (u.i === v.i) ex.push('Le produit vectoriel d\'un vecteur par lui-même est nul.');
       return { steps: ex, baseTex: resTex };
     }
     ex.push(figureSentence(u, v, d));
     ex.push(M(vtex(d.h) + ' = ' + E.coordsTex(d.cs, d.lo)));
-    ex.push('On développe par bilinéarité du produit vectoriel :');
+    ex.push('On développe par bilinéarité du produit vectoriel ; chaque produit élémentaire se lit sur la figure de calcul, le sens du résultat étant donné par la règle de la main droite (deux vecteurs d\'une même base : suite positive $+$, indices intervertis $-$) :');
     let line = '';
     let idx = 0;
     d.cs.forEach((c, t) => {
@@ -1134,7 +1145,40 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return '<figure class="fig">' + s + '<figcaption>' + inline(caption) + '</figcaption></figure>';
   }
 
-  const api = { projection, derivation, bour, division };
+  // --- Règle de la main droite : pouce u, index v, majeur u^v (sort de la feuille) ---
+  function mainDroite(inline) {
+    const sm = (x, y, t, c, an) => txt(x, y, t, c, an || 'start', 12, false);
+    const s = svg(
+      arrow(OX, OY, OX + L + 6, OY, FG, 2.4) + vec(OX + L + 14, OY + 16, 'u', '', FG, 'start') + sm(OX + L + 10, OY - 8, 'pouce', MU) +
+      arrow(OX, OY, OX, OY - L - 6, Q, 2.4) + vec(OX - 8, OY - L - 14, 'v', '', Q, 'end') + sm(OX + 8, OY - L - 2, 'index', MU) +
+      arc(30, 0, Math.PI / 2, AN) + txt(OX + 24, OY - 24, 'θ', AN) +
+      '<circle cx="' + OX + '" cy="' + OY + '" r="8" fill="none" stroke="' + OR + '" stroke-width="2"/><circle cx="' + OX + '" cy="' + OY + '" r="2.6" fill="' + OR + '"/>' +
+      vec(OX + 14, OY + 26, 'w', '', OR, 'start') + sm(OX + 30, OY + 26, 'majeur : sort de la feuille', OR));
+    return '<div class="figs">' + fig(s, '$\\overrightarrow{u}\\wedge\\overrightarrow{v}=\\overrightarrow{w}$ avec $\\theta=(\\overrightarrow{u},\\overrightarrow{v})$ : pouce $\\overrightarrow{u}$, index $\\overrightarrow{v}$, majeur $\\overrightarrow{w}$.', inline) + '</div>';
+  }
+
+  // --- Suite positive x -> y -> z -> x (signe +) ou négative (indices intervertis, signe moins) ---
+  function permutation(inline) {
+    const V = [[135, 46], [62, 146], [208, 146]]; // x, y, z
+    const cx = (V[0][0] + V[1][0] + V[2][0]) / 3, cy = (V[0][1] + V[1][1] + V[2][1]) / 3;
+    function side(P, Q2, off, color, sign) {
+      const dx = Q2[0] - P[0], dy = Q2[1] - P[1], len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
+      let nx = -uy, ny = ux; const mx = (P[0] + Q2[0]) / 2, my = (P[1] + Q2[1]) / 2;
+      if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny; }
+      const o = off, sh = 24;
+      const a = [P[0] + ux * sh + nx * o, P[1] + uy * sh + ny * o], b = [Q2[0] - ux * sh + nx * o, Q2[1] - uy * sh + ny * o];
+      const arrowSvg = sign > 0 ? arrow(a[0], a[1], b[0], b[1], color, 2.4) : arrow(b[0], b[1], a[0], a[1], color, 1.8);
+      const lx = mx + nx * (o + (o > 0 ? 12 : -14)), ly = my + ny * (o + (o > 0 ? 12 : -14)) + 5;
+      return arrowSvg + txt(lx, ly, sign > 0 ? '+' : '−', color, 'middle', 17, false);
+    }
+    let g = '';
+    [[0, 1], [1, 2], [2, 0]].forEach((e) => { g += side(V[e[0]], V[e[1]], -8, Q, 1) + side(V[e[0]], V[e[1]], 9, OR, -1); });
+    g += vec(V[0][0], V[0][1] - 12, 'x', '', FG, 'middle', 17) + vec(V[1][0] - 8, V[1][1] + 20, 'y', '', FG, 'end', 17) + vec(V[2][0] + 8, V[2][1] + 20, 'z', '', FG, 'start', 17);
+    const s = svg(g);
+    return '<div class="figs">' + fig(s, ['Sens direct $\\overrightarrow{x}\\to\\overrightarrow{y}\\to\\overrightarrow{z}\\to\\overrightarrow{x}$ (flèches bleues) : signe $+$. Sens inverse (flèches orange) : signe $-$.', '$\\overrightarrow{x}\\wedge\\overrightarrow{y}=\\overrightarrow{z}\\quad\\overrightarrow{y}\\wedge\\overrightarrow{x}=-\\overrightarrow{z}$'], inline) + '</div>';
+  }
+
+  const api = { projection, derivation, bour, division, mainDroite, permutation };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.MethodFigs = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3804,12 +3848,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         '<p>Résultat : un <b>scalaire</b>, mesure algébrique de la projection orthogonale de ' + T('\\overrightarrow{v}') + ' sur ' + T('\\overrightarrow{u}') + '.</p>' +
         '<p><b>Même figure de calcul :</b> lecture directe de l\'angle, ou méthode graphique par projection (longueur positive si elle pointe dans le sens du vecteur sur lequel on projette, négative sinon).</p>' +
         '<p><b>Figures différentes :</b> on projette d\'abord l\'un des vecteurs dans une base commune, puis on développe terme à terme.</p></section>' +
-        '<section class="card"><h2>Produit vectoriel</h2>' + D('\\overrightarrow{u}\\wedge\\overrightarrow{v}=\\|\\overrightarrow{u}\\|\\,\\|\\overrightarrow{v}\\|\\sin\\theta\;\\overrightarrow{w}') +
-        '<p>Résultat : un <b>vecteur</b> normal au plan formé par ' + T('\\overrightarrow{u}') + ' et ' + T('\\overrightarrow{v}') + ', avec ' + T('(\\overrightarrow{u},\\overrightarrow{v},\\overrightarrow{w})') + ' trièdre direct (règle de la main droite).</p>' +
-        D('\\overrightarrow{x}\\wedge\\overrightarrow{y}=\\overrightarrow{z}\\quad \\overrightarrow{y}\\wedge\\overrightarrow{z}=\\overrightarrow{x}\\quad \\overrightarrow{z}\\wedge\\overrightarrow{x}=\\overrightarrow{y}') +
-        D('\\overrightarrow{y}\\wedge\\overrightarrow{x}=-\\overrightarrow{z}\\quad \\overrightarrow{z}\\wedge\\overrightarrow{y}=-\\overrightarrow{x}\\quad \\overrightarrow{x}\\wedge\\overrightarrow{z}=-\\overrightarrow{y}') +
+        '<section class="card"><h2>Produit vectoriel</h2>' + D('\\overrightarrow{u}\\wedge\\overrightarrow{v}=\\|\\overrightarrow{u}\\|\\,\\|\\overrightarrow{v}\\|\\sin\\theta\\;\\overrightarrow{w}') +
+        '<p>Résultat : un <b>vecteur</b> normal au plan formé par ' + T('\\overrightarrow{u}') + ' et ' + T('\\overrightarrow{v}') + ', avec ' + T('(\\overrightarrow{u},\\overrightarrow{v},\\overrightarrow{w})') + ' trièdre direct.</p>' +
+        '<div class="rule" style="margin:8px 0"><b>Règle de la main droite.</b> Le <b>pouce</b> donne ' + T('\\overrightarrow{u}') + ', l\'<b>index</b> donne ' + T('\\overrightarrow{v}') + ', le <b>majeur</b> (perpendiculaire aux deux autres) donne le sens de ' + T('\\overrightarrow{u}\\wedge\\overrightarrow{v}=\\overrightarrow{w}') + '.</div>' + MF.mainDroite(rtext) +
+        '<div class="rule" style="margin:8px 0"><b>Suite positive ou négative.</b> Dans une base directe, la suite ' + T('\\overrightarrow{x}\\ \\overrightarrow{y}\\ \\overrightarrow{z}\\ \\overrightarrow{x}\\ \\overrightarrow{y}') + ' est la <b>permutation circulaire directe</b>. Deux vecteurs consécutifs dans cette suite, pris dans cet ordre, donnent le suivant avec le signe ' + T('+') + '. Si les indices sont intervertis (sens inverse), le résultat est le suivant avec le signe ' + T('-') + '.</div>' + MF.permutation(rtext) +
+        D('\\begin{array}{ll}\\overrightarrow{x}\\wedge\\overrightarrow{y}=\\overrightarrow{z} & \\overrightarrow{y}\\wedge\\overrightarrow{x}=-\\overrightarrow{z}\\\\ \\overrightarrow{y}\\wedge\\overrightarrow{z}=\\overrightarrow{x} & \\overrightarrow{z}\\wedge\\overrightarrow{y}=-\\overrightarrow{x}\\\\ \\overrightarrow{z}\\wedge\\overrightarrow{x}=\\overrightarrow{y} & \\overrightarrow{x}\\wedge\\overrightarrow{z}=-\\overrightarrow{y}\\end{array}') +
         '<p>Sens direct : signe ' + T('+') + '. Sens inverse : signe ' + T('-') + '. Valable dans toute base orthonormée directe, donc aussi pour ' + T('b_1') + ' et ' + T('b_2') + '.</p>' +
-        '<p><b>Même figure de calcul :</b> on décompose sur les axes de la figure, puis on développe par bilinéarité en ne gardant que le terme non nul (le produit vectoriel d\'un vecteur par lui-même est nul).</p>' +
+        '<p><b>Deux vecteurs d\'une même base :</b> aucun développement. On applique la règle de la main droite, c\'est-à-dire la suite positive ou négative : ' + T('\\overrightarrow{x}\\wedge\\overrightarrow{y}=\\overrightarrow{z}') + ', ' + T('\\overrightarrow{y_1}\\wedge\\overrightarrow{x_1}=-\\overrightarrow{z_1}') + '. Le produit vectoriel d\'un vecteur par lui-même est nul.</p>' +
+        '<p><b>Même figure de calcul :</b> on décompose sur les axes de la figure, puis on développe par bilinéarité. Chaque produit élémentaire obtenu se lit sur la figure de calcul, le sens du résultat étant donné par la règle de la main droite (deux vecteurs d\'une même base : suite positive ou négative).</p>' +
         '<p><b>Figures différentes :</b> on projette d\'abord l\'un des vecteurs dans une base commune, puis on développe par bilinéarité.</p></section>' +
         '<section class="card"><h2>Produit mixte</h2>' + D('(\\overrightarrow{u},\\overrightarrow{v},\\overrightarrow{w})=(\\overrightarrow{u}\\wedge\\overrightarrow{v})\\cdot\\overrightarrow{w}') +
         '<p>Résultat : un <b>scalaire</b>. Sa valeur absolue est le volume du parallélépipède construit sur les trois vecteurs.</p>' +
@@ -3818,7 +3864,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         '<li><b>Permutation non circulaire :</b> changement de signe.</li>' +
         '<li><b>Multilinéarité :</b> linéaire par rapport à chacun des trois vecteurs.</li>' +
         '<li><b>Nullité :</b> le produit mixte est nul si et seulement si les trois vecteurs sont coplanaires, par exemple dès que deux vecteurs sont égaux ou colinéaires.</li>' +
-        '<li><b>Base orthonormée directe :</b> ' + T('(\\overrightarrow{i}\\wedge\\overrightarrow{j})\\cdot\\overrightarrow{k}=1') + '</li></ul></section>';
+        '<li><b>Base orthonormée directe :</b> ' + T('(\\overrightarrow{x},\\overrightarrow{y},\\overrightarrow{z})=1') + ' (suite positive) ; indices intervertis : ' + T('(\\overrightarrow{y},\\overrightarrow{x},\\overrightarrow{z})=-1') + ' (suite négative). Le produit vectoriel interne se lit par la règle de la main droite.</li></ul></section>';
     }
 
     function liaisons() {
@@ -3880,6 +3926,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) +
         '<p>Pour un vecteur ' + T(ov('u')) + ' constant dans la base ' + T('b_1') + ' :</p>' +
         D(dd('u', '0') + '=' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) +
+        '<div class="rule" style="margin:8px 0"><b>Règle de la main droite.</b> Pour un produit vectoriel entre vecteurs d\'une même base : pouce ' + T(ov('u')) + ', index ' + T(ov('v')) + ', majeur ' + T(ov('u') + '\\wedge' + ov('v')) + '. Suite positive ' + T('x\\ y\\ z\\ x') + ' : signe ' + T('+') + ' ; indices intervertis : signe ' + T('-') + '. Exemple : ' + T(ov('z') + '\\wedge' + ov('x_1') + '=' + ov('y_1')) + ' et ' + T(ov('z') + '\\wedge' + ov('y_1') + '=-' + ov('x_1')) + '.</div>' + MF.permutation(rtext) +
         '<p><b>Méthode.</b> On écrit le vecteur ' + T(ov('u')) + ' dans la base où il est constant, on repère le vecteur rotation de cette base par rapport à ' + T('b_0') + ', puis on calcule le produit vectoriel. Si plusieurs rotations s\'enchaînent, on décompose ce vecteur rotation par composition.</p>' +
         '<p>Pour une base de dérivation ' + T('b_0') + ' et un vecteur exprimé dans ' + T('b_2') + ', on passe par la base intermédiaire ' + T('b_1') + ' :</p>' +
         D(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/1}') + '\\wedge' + ov('u') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u') + '=' + ov('\\Omega_{2/0}') + '\\wedge' + ov('u')) + '</section>' +
@@ -3908,9 +3955,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       return '<h1>Méthode : figures de calcul</h1>' +
         card('Démarche générale', OL([
           'Repérer la base de chaque vecteur (' + T('b') + ', ' + T('b_1') + ' ou ' + T('b_2') + ') et la figure de calcul qui relie deux bases consécutives : figure ' + T('(\\alpha)') + ' entre ' + T('b') + ' et ' + T('b_1') + ', figure ' + T('(\\beta)') + ' entre ' + T('b_1') + ' et ' + T('b_2') + '.',
-          '<b>Même base :</b> lecture directe, sans calcul d\'angle (voir les cas ci-dessous).',
+          '<b>Même base :</b> lecture directe, sans calcul d\'angle et sans développement. Pour un produit vectoriel, règle de la main droite et suite positive ou négative (voir ci-dessous).',
           '<b>Bases différentes :</b> projeter le vecteur de la base la plus éloignée dans l\'autre base, une figure à la fois, de façon à travailler dans une base commune.',
-          'Développer par bilinéarité : chaque produit porte alors sur deux vecteurs d\'une même base orthonormée directe.',
+          'Développer par bilinéarité : chaque produit élémentaire se lit alors sur la figure de calcul, avec la règle de la main droite pour le sens du résultat (deux vecteurs d\'une même base : suite positive ' + T('+') + ', indices intervertis ' + T('-') + ').',
           'Factoriser les coefficients (nombres devant les vecteurs), puis écrire le résultat sous la forme demandée (base de sortie imposée pour un vecteur).',
           'Contrôler le résultat avec un cas particulier (voir plus bas).',
         ])) +
@@ -3931,7 +3978,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           '<b>Figures différentes :</b> projeter l\'un des vecteurs dans une base commune, puis développer terme à terme.',
           'Le résultat est un <b>scalaire</b>.',
         ])) +
-        card('Produit vectoriel', UL([
+        card('Produit vectoriel', '<div class="rule" style="margin:0 0 8px"><b>Règle de la main droite.</b> Pouce : ' + T(ov('u')) + ', index : ' + T(ov('v')) + ', majeur : ' + T(ov('u') + '\\wedge' + ov('v')) + '. Entre deux vecteurs d\'une même base, on ne développe jamais par bilinéarité : on applique cette règle.</div>' + MF.mainDroite(rtext) +
+        '<div class="rule" style="margin:8px 0"><b>Suite positive ou négative.</b> Dans la suite ' + T(x + '\\ ' + y + '\\ ' + z + '\\ ' + x + '\\ ' + y) + ' (permutation circulaire directe), le produit de deux vecteurs consécutifs, dans cet ordre, vaut le suivant : signe ' + T('+') + '. Si les indices sont intervertis (suite négative), le signe est ' + T('-') + '.</div>' + MF.permutation(rtext) +
+        UL([
           '<b>Même base :</b> permutation circulaire ' + T(x + '\\wedge' + y + '=' + z) + ', ' + T(y + '\\wedge' + z + '=' + x) + ', ' + T(z + '\\wedge' + x + '=' + y) + '. Signe ' + T('+') + ' dans le sens direct, ' + T('-') + ' dans le sens inverse. Un vecteur par lui-même donne le vecteur nul.',
           '<b>Figures différentes :</b> projeter, puis développer par bilinéarité en gardant les termes non nuls.',
           'Le produit n\'est pas commutatif : ' + T(ov('u') + '\\wedge' + ov('v') + '=-' + ov('v') + '\\wedge' + ov('u')) + '.',
@@ -3941,7 +3990,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           'Définition : ' + T('(' + ov('u') + ',' + ov('v') + ',' + ov('w') + ')=(' + ov('u') + '\\wedge' + ov('v') + ')\\cdot' + ov('w')) + '.',
           '<b>Test préalable :</b> si deux des trois vecteurs sont égaux, opposés ou colinéaires, le produit mixte est nul.',
           'Sinon : calculer d\'abord le produit vectoriel des deux premiers vecteurs, puis le produit scalaire avec le troisième.',
-          'Une permutation circulaire ne change pas la valeur, une permutation non circulaire change le signe : on peut choisir l\'ordre le plus simple.',
+          'Une permutation circulaire ne change pas la valeur, une permutation non circulaire change le signe : on peut choisir l\'ordre le plus simple. Pour trois vecteurs d\'une même base, suite positive ' + T('x\\ y\\ z') + ' : ' + T('+1') + ', indices intervertis : ' + T('-1') + '.',
+          'Le produit vectoriel interne se calcule par la règle de la main droite, sans développement.',
           'Le résultat est un <b>scalaire</b>.',
         ])) +
         card('Coefficients et pièges courants', UL([
@@ -3966,7 +4016,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           'Écrire le vecteur dans la base où il est <b>constant</b> (' + T('b_1') + ' ou ' + T('b_2') + '), éventuellement multiplié par une fonction du temps.',
           'Identifier les vecteurs rotation à l\'aide des figures de calcul : ' + T(ov('\\Omega_{1/0}') + '=\\dot{\\alpha}\\,' + ov('\\text{axe}')) + ' et ' + T(ov('\\Omega_{2/1}') + '=\\dot{\\beta}\\,' + ov('\\text{axe}')) + ', le signe dépendant de l\'orientation de l\'axe de la figure.',
           '<b>Choisir la méthode :</b> méthode graphique uniquement si une seule rotation relie la base de dérivation ' + T('b_0') + ' à la base où le vecteur est constant ; dans tous les autres cas (deux rotations, par exemple), formule de Bour.',
-          'Calculer le produit vectoriel (permutation circulaire), en projetant si besoin le vecteur rotation dans la base du vecteur.',
+          'Calculer le produit vectoriel par la règle de la main droite : suite positive ' + T('x\\ y\\ z\\ x') + ' pour le signe ' + T('+') + ', indices intervertis pour le signe ' + T('-') + ' (projeter si besoin le vecteur rotation dans la base du vecteur, sans développer inutilement).',
           'Exprimer le résultat dans la base demandée.',
         ])) +
         card('Vecteur rotation', UL([
@@ -4000,7 +4050,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           UL([
             'Autre écriture, en deux étapes : ' + T(dd('u', '1') + '=' + ov('\\Omega_{2/1}') + '\\wedge' + ov('u')) + ' puis ' + T(dd('u', '0') + '=' + dd('u', '1') + '+' + ov('\\Omega_{1/0}') + '\\wedge' + ov('u')) + ', soit le même résultat.',
             'Projeter le vecteur rotation, ou le vecteur dérivé, dans la base du vecteur : un des deux axes de rotation n\'y est pas écrit.',
-            'Développer le produit vectoriel terme à terme, en gardant les termes non nuls.',
+            'Développer le produit vectoriel terme à terme, en gardant les termes non nuls. Chaque produit de deux vecteurs d\'une même base se lit par la règle de la main droite : suite positive ' + T('x\\ y\\ z\\ x') + ' pour le signe ' + T('+') + ', indices intervertis pour le signe ' + T('-') + ' (par exemple ' + T(ov('z') + '\\wedge' + ov('x_1') + '=' + ov('y_1')) + ' et ' + T(ov('x_1') + '\\wedge' + ov('z') + '=-' + ov('y_1')) + ').',
           ])) +
         card('Vecteur de norme variable', '<p>Si le vecteur s\'écrit ' + T('\\lambda(t)\\,' + ov('u')) + ' avec ' + ov('u') + ' constant dans une base :</p>' +
           D(dd('\\lambda\\,u', '0') .replace('\\overrightarrow{\\lambda\\,u}', '\\lambda\\,\\overrightarrow{u}') + '=\\dot{\\lambda}\\,' + ov('u') + '+\\lambda\\,' + dd('u', '0')) +

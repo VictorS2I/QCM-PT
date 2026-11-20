@@ -2330,6 +2330,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     n_const: 'Valeurs remarquables',
     n_log: 'Logarithmes et décibels',
     n_phys: 'Applications de S2I',
+    n_unit: 'Unités et homogénéité',
+    n_dl: 'Développement limité à l\'ordre 1',
   };
   const TOL = 0.10;      // tolérance sur la bonne réponse
   const FAR = 0.25;      // écart minimal des propositions fausses
@@ -2357,6 +2359,24 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const pc = (x) => num(+(100 * x).toPrecision(2)) + '\\ \\%';
 
   // ---------- Construction d'une question à partir d'une spécification ----------
+  // Unités voisines (pour les questions où l'unité du résultat est à déterminer) et rappel du raisonnement
+  const UALT = {
+    MPa: { alt: ['kPa', 'N', 'GPa'], how: 'une force en N divisée par une surface en mm² donne des $\\dfrac{\\mathrm{N}}{\\mathrm{mm^2}}$, soit des MPa ($1\\ \\mathrm{MPa}=1\\ \\mathrm{N/mm^2}$). Un moment en N.mm divisé par un volume en mm³ donne aussi des MPa.' },
+    mm: { alt: ['m', 'cm', 'km'], how: 'avec $N$ en N, $L_0$ en mm, $E$ en MPa et $S$ en mm² : $\\dfrac{\\mathrm{N}\\times\\mathrm{mm}}{\\mathrm{N/mm^2}\\times\\mathrm{mm^2}}=\\mathrm{mm}$.' },
+    W: { alt: ['kW', 'J', 'N.m'], how: 'un couple en N.m multiplié par une vitesse angulaire en rad/s donne des $\\mathrm{J/s}$, soit des W ; une tension en V multipliée par un courant en A donne aussi des W.' },
+    kW: { alt: ['W', 'kJ', 'kWh'], how: 'N.m multiplié par rad/s donne des W, et $1\\ \\mathrm{kW}=10^{3}\\ \\mathrm{W}$ ; une énergie en J divisée par un temps en s est aussi une puissance.' },
+    kJ: { alt: ['J', 'kW', 'kWh'], how: 'une énergie s\'exprime en joules ($1\\ \\mathrm{J}=1\\ \\mathrm{N.m}=1\\ \\mathrm{kg\\,m^2/s^2}$), et $1\\ \\mathrm{kJ}=10^{3}\\ \\mathrm{J}$ ; $1\\ \\mathrm{Wh}=3600\\ \\mathrm{J}$.' },
+    'm/s': { alt: ['km/h', 'm/s^2', 'rad/s'], how: 'une vitesse est une longueur divisée par un temps : $\\mathrm{rad/s}\\times\\mathrm{m}=\\mathrm{m/s}$ (le radian est sans dimension) ; $\\mathrm{km/h}$ divisé par $3{,}6$ donne des $\\mathrm{m/s}$.' },
+    'rad/s': { alt: ['tr/min', 'Hz', 'rad'], how: 'une vitesse angulaire est un angle par unité de temps : $1\\ \\mathrm{tr/min}=\\dfrac{2\\pi\\ \\mathrm{rad}}{60\\ \\mathrm{s}}$.' },
+    'tr/min': { alt: ['rad/s', 'Hz', 'rad'], how: 'une fréquence de rotation se compte en tours par minute ; $1\\ \\mathrm{tr/min}=\\dfrac{2\\pi}{60}\\ \\mathrm{rad/s}$.' },
+    N: { alt: ['kg', 'N.m', 'kN'], how: 'une force est une masse multipliée par une accélération : $\\mathrm{kg}\\times\\mathrm{m/s^2}=\\mathrm{N}$.' },
+    'N.m': { alt: ['N', 'W', 'J'], how: 'un couple est une puissance divisée par une vitesse angulaire : $\\dfrac{\\mathrm{W}}{\\mathrm{rad/s}}=\\dfrac{\\mathrm{J/s}}{1/\\mathrm{s}}=\\mathrm{J}$, écrit N.m pour un couple.' },
+    ms: { alt: ['s', 'Hz', 'min'], how: 'une constante de temps est une durée ; $\\tau$ est donnée en ms et $t_{r5\\%}=3\\tau$ garde la même unité.' },
+    rad: { alt: ['rad/s', 's', 'tr'], how: 'un angle en degrés se convertit en radians avec $\\dfrac{\\pi}{180}\\ \\mathrm{rad}$ par degré.' },
+  };
+  const unitTexU = (u) => (u === 'm/s^2' ? '\\ \\mathrm{m/s^2}' : unitTex(u));
+
+  // ---------- Construction d'une question à partir d'une spécification ----------
   function build(fam, o) {
     const sig = o.sig || 3; const val = o.val; const f = (x) => fmt(x, sig);
     const used = new Set([f(val)]); const wrong = [];
@@ -2364,13 +2384,27 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const add = (w) => { if (wrong.length >= 3 || !far(w)) return; const s = f(w); if (used.has(s)) return; used.add(s); wrong.push(w); };
     shuffle((o.bad || []).slice()).forEach(add);
     shuffle([2, 0.5, 10, 0.1, 4, 0.25, 3, 1 / 3, 5, 0.2, -1].map((k) => val * k)).forEach(add);
-    const all = shuffle([{ x: val, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
+    const U = UALT[o.unit]; const um = !!(U && fam === 'n_phys' && wrong.length >= 1 && !o.text.includes(' en ' + o.unit + ' ?') && R.rand() < 0.5);
     const u = unitTex(o.unit);
     const b1 = val * (1 - TOL), b2 = val * (1 + TOL); const lo = f(Math.min(b1, b2)), hi = f(Math.max(b1, b2));
-    const steps = o.steps.concat([(Math.abs(+val.toPrecision(sig) - val) <= 1e-9 * Math.abs(val) ? 'Valeur exacte : $' : 'Valeur exacte arrondie : $') + f(val) + u + '$. Seule la bonne proposition appartient à l\'intervalle de tolérance de 10 %, c\'est-à-dire entre $' + lo + '$ et $' + hi + '$.']);
+    const exact = (Math.abs(+val.toPrecision(sig) - val) <= 1e-9 * Math.abs(val) ? 'Valeur exacte : $' : 'Valeur exacte arrondie : $') + f(val) + u + '$. ';
+    let all, choices, steps, text;
+    if (um) {
+      // la bonne valeur est proposée avec plusieurs unités : il faut aussi déterminer l'unité du résultat
+      const alts = shuffle(U.alt.slice()).slice(0, 2);
+      all = shuffle([{ x: val, u: o.unit, ok: true }, { x: val, u: alts[0] }, { x: val, u: alts[1] }, { x: wrong[0], u: o.unit }]);
+      choices = all.map((c) => '$' + f(c.x) + unitTexU(c.u) + '$');
+      steps = o.steps.concat(['Unité : ' + U.how.charAt(0).toUpperCase() + U.how.slice(1)], [exact + 'Seule la proposition qui associe une valeur comprise entre $' + lo + '$ et $' + hi + '$ (tolérance de 10 %) et la bonne unité convient.']);
+      text = o.text + ' Donner le résultat avec son unité, à 10 % près.';
+    } else {
+      all = shuffle([{ x: val, ok: true }].concat(wrong.map((x) => ({ x, ok: false }))));
+      choices = all.map((c) => '$' + f(c.x) + u + '$');
+      steps = o.steps.concat([exact + 'Seule la bonne proposition appartient à l\'intervalle de tolérance de 10 %, c\'est-à-dire entre $' + lo + '$ et $' + hi + '$.']);
+      text = o.text + ' Réponse attendue à 10 % près.';
+    }
     return {
-      theme: 'num', family: fam, famLabel: FAM[fam], text: o.text + ' Réponse attendue à 10 % près.', math: null, choiceKind: 'text',
-      choices: all.map((c) => '$' + f(c.x) + u + '$'), correctIndex: all.findIndex((c) => c.ok), steps, aid: o.aid || '', exact: val, unit: o.unit || '',
+      theme: 'num', family: fam, famLabel: FAM[fam], text, math: null, choiceKind: 'text',
+      choices, correctIndex: all.findIndex((c) => c.ok), steps, aid: o.aid || '', exact: val, unit: o.unit || '', um,
     };
   }
 
@@ -2516,10 +2550,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return { text: 'Convertir $' + d(x) + '$ rad en degrés.', val, steps: ['Méthode : $\\pi$ rad correspond à $180^\\circ$, donc $1$ rad $\\approx57{,}3^\\circ$ (environ $60^\\circ$).', '$' + d(x) + '\\ \\mathrm{rad}=' + d(x) + '\\times\\dfrac{180}{\\pi}\\approx' + d(x) + '\\times57{,}3\\approx' + fmt(val) + '^\\circ$.'], aid: '$\\pi$ rad $=180^\\circ$ ; $1$ rad $\\approx57{,}3^\\circ$.', unit: '^\\circ', bad: [x * Math.PI, x / 57.3, val * 2] };
   }
   function tExp() {
-    const m = pick([1, 2, 3]); const val = 1 - Math.exp(-m);
-    const tab = { 1: ['0{,}37', '0{,}63'], 2: ['0{,}135', '0{,}865'], 3: ['0{,}05', '0{,}95'] }[m];
-    return { text: 'La réponse indicielle d\'un système du premier ordre vérifie $\\dfrac{s(t)}{s_\\infty}=1-e^{-t/\\tau}$. Quelle est la valeur de $\\dfrac{s(t)}{s_\\infty}$ à $t=' + (m === 1 ? '' : m) + '\\tau$ ?', val, sig: 2,
-      steps: ['Méthode : retenir $e^{-1}\\approx0{,}37$, $e^{-2}\\approx0{,}135$, $e^{-3}\\approx0{,}05$.', '$1-e^{-' + m + '}\\approx1-' + tab[0] + '=' + tab[1] + '$, soit environ $' + Math.round(val * 100) + '\\ \\%$ de la valeur finale.'], aid: '$e^{-1}\\approx0{,}37$ ; $e^{-2}\\approx0{,}135$ ; $e^{-3}\\approx0{,}05$.', bad: [Math.exp(-m), 1 / m, 0.5] };
+    const val = 1 - Math.exp(-1);
+    return { text: 'La réponse indicielle d\'un système du premier ordre vérifie $\\dfrac{s(t)}{s_\\infty}=1-e^{-t/\\tau}$. Quelle est la valeur de $\\dfrac{s(t)}{s_\\infty}$ à $t=\\tau$ ?', val, sig: 2,
+      steps: ['Méthode : à $t=\\tau$, l\'exposant vaut $-1$ ; retenir $e^{-1}\\approx0{,}37$.', '$1-e^{-1}\\approx1-0{,}37=0{,}63$, soit environ $63\\ \\%$ de la valeur finale.'], aid: '$e^{-1}\\approx0{,}37$, donc $63\\ \\%$ de la valeur finale à $t=\\tau$.', bad: [Math.exp(-1), 1 / 2, 0.95] };
   }
 
   // ======================= Logarithmes et décibels =======================
@@ -2559,13 +2592,32 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const e = pick(LG); const val = Math.log10(e[0]);
     return { text: 'Calculer $\\log_{10}(' + d(e[0]) + ')$.', val, sig: 2, steps: ['Méthode : décomposer avec $2$, $3$ et $10$, puis utiliser $\\log(ab)=\\log a+\\log b$.', '$' + e[1] + '$.'], aid: aidLog, bad: [val * 2.3, val / 2.3, -val] };
   }
-  const LN = [
-    [2, '\\ln2\\approx0{,}69'], [3, '\\ln3\\approx1{,}10'], [4, '4=2^2\\ :\\ 2\\times0{,}69=1{,}38'], [5, '5=\\dfrac{10}{2}\\ :\\ 2{,}30-0{,}69=1{,}61'], [6, '6=2\\times3\\ :\\ 0{,}69+1{,}10=1{,}79'],
-    [8, '8=2^3\\ :\\ 3\\times0{,}69=2{,}07'], [10, '\\ln10\\approx2{,}30'], [20, '20=2\\times10\\ :\\ 0{,}69+2{,}30=2{,}99'], [100, '100=10^2\\ :\\ 2\\times2{,}30=4{,}60'], [0.5, '0{,}5=\\dfrac12\\ :\\ -0{,}69'], [0.1, '0{,}1=10^{-1}\\ :\\ -2{,}30'],
-  ];
-  function tLn() {
-    const e = pick(LN); const val = Math.log(e[0]);
-    return { text: 'Calculer $\\ln(' + d(e[0]) + ')$.', val, sig: 2, steps: ['Méthode : retenir $\\ln2\\approx0{,}69$, $\\ln3\\approx1{,}10$, $\\ln10\\approx2{,}30$, puis décomposer.', '$' + e[1] + '$.'], aid: 'Valeurs utiles : $\\ln2\\approx0{,}69$ ; $\\ln3\\approx1{,}10$ ; $\\ln10\\approx2{,}30$.', bad: [val / 2.3, val * 2.3, -val] };
+  const DBS = [[2, '2', 6], [4, '4', 12], [5, '5', 14], [10, '10', 20], [20, '20', 26], [50, '50', 34], [100, '100', 40], [0.5, '0{,}5', -6], [0.1, '0{,}1', -20], [0.2, '0{,}2', -14]];
+  function tDbSum() {
+    const a = pick(DBS); let b; do { b = pick(DBS); } while (b === a || a[2] + b[2] === 0);
+    const val = 20 * Math.log10(a[0] * b[0]);
+    return { text: 'Deux blocs sont placés en série. Leurs rapports d\'amplitudes à une pulsation donnée valent $\\left|H_1\\right|=' + a[1] + '$ et $\\left|H_2\\right|=' + b[1] + '$. Quel est le gain total $G_{dB}=20\\log_{10}\\left|H_1H_2\\right|$ en décibels ?', val, sig: 2, unit: 'dB',
+      steps: ['Méthode : le produit des rapports devient une <b>somme</b> de gains en décibels, car $\\log(ab)=\\log a+\\log b$.', '$20\\log_{10}' + a[1] + '=' + a[2] + '$ dB et $20\\log_{10}' + b[1] + '=' + b[2] + '$ dB.', '$G_{dB}=' + a[2] + '+(' + b[2] + ')=' + (a[2] + b[2]) + '$ dB.'], aid: aidDb, bad: [a[2] * b[2], Math.abs(a[2] - b[2]) || 3, 20 * Math.log10(a[0] + b[0])] };
+  }
+  function tBodeAsym() {
+    const kk = pick([[2, '2', 6], [5, '5', 14], [10, '10', 20], [20, '20', 26], [50, '50', 34], [100, '100', 40]]); const n = pick([10, 100]);
+    const val = 20 * Math.log10(kk[0]) - 20 * Math.log10(n);
+    if (Math.abs(val) < 1e-9) return tBodeAsym();
+    return { text: 'Un système du premier ordre a pour gain statique $K=' + kk[1] + '$ et pour pulsation de cassure $\\omega_c$. Quel est son gain asymptotique en décibels à $\\omega=' + n + '\\,\\omega_c$ ? On rappelle qu\'au-delà de $\\omega_c$, $\\left|H\\right|\\approx\\dfrac{K\\,\\omega_c}{\\omega}$.', val, sig: 2, unit: 'dB',
+      steps: ['Méthode : à $\\omega=n\\,\\omega_c$, $\\left|H\\right|\\approx\\dfrac{K}{n}$, donc $G_{dB}=20\\log_{10}K-20\\log_{10}n$.', '$20\\log_{10}' + kk[1] + '=' + kk[2] + '$ dB et $20\\log_{10}' + n + '=' + 20 * Math.log10(n) + '$ dB.', '$G_{dB}=' + kk[2] + '-' + 20 * Math.log10(n) + '=' + (kk[2] - 20 * Math.log10(n)) + '$ dB.'], aid: aidDb, bad: [kk[2], kk[2] + 20 * Math.log10(n), -20 * Math.log10(n)] };
+  }
+  function tBodeInt() {
+    const K = pick([[10, 20], [100, 40], [1000, 60]]), w = pick([[1, 0], [10, 20], [100, 40]]);
+    if (K[1] === w[1]) return tBodeInt();
+    const val = K[1] - w[1];
+    return { text: 'Un intégrateur a pour fonction de transfert $H(p)=\\dfrac{' + K[0] + '}{p}$. Quel est son gain $G_{dB}=20\\log_{10}\\left|H(j\\omega)\\right|$ en décibels à $\\omega=' + w[0] + '$ rad/s ? On rappelle que $\\left|H(j\\omega)\\right|=\\dfrac{' + K[0] + '}{\\omega}$.', val, sig: 2, unit: 'dB',
+      steps: ['Méthode : $G_{dB}=20\\log_{10}K-20\\log_{10}\\omega$ ; la pente est de $-20$ dB par décade.', '$20\\log_{10}' + K[0] + '=' + K[1] + '$ dB et $20\\log_{10}' + w[0] + '=' + w[1] + '$ dB.', '$G_{dB}=' + K[1] + '-' + w[1] + '=' + val + '$ dB.'], aid: aidDb, bad: [K[1] + w[1], -val, K[1]] };
+  }
+  function tPente() {
+    const t = pick([[1, 'un intégrateur', 20], [2, 'un double intégrateur', 40], [1, 'un système du premier ordre au-delà de sa pulsation de cassure', 20], [2, 'un système du second ordre au-delà de sa pulsation propre', 40]]);
+    const val = -t[2];
+    return { text: 'De combien varie, en décibels, le gain asymptotique de ' + t[1] + ' lorsque la pulsation est multipliée par $10$ (une décade) ?', val, sig: 2, unit: 'dB',
+      steps: ['Méthode : une décade correspond à $\\log_{10}10=1$, donc à $20$ dB par puissance de $\\omega$ au dénominateur.', '$\\left|H\\right|\\propto\\dfrac{1}{\\omega^{' + t[0] + '}}$, d\'où $\\Delta G_{dB}=-' + t[0] + '\\times20=' + val + '$ dB par décade.'], aid: 'Pente : $-20$ dB par décade par puissance de $\\omega$ au dénominateur.', bad: [-t[2] / 2, t[2], -t[2] * 2] };
   }
   function tAntilog() {
     const t = pick([[0.3, '2', '10^{0{,}30}\\approx2'], [0.48, '3', '10^{0{,}48}\\approx3'], [0.7, '5', '10^{0{,}70}\\approx5'], [0.9, '8', '10^{0{,}90}\\approx8'], [1.3, '20', '10^{1{,}30}=10\\times10^{0{,}30}\\approx20'], [1.7, '50', '10^{1{,}70}=10\\times10^{0{,}70}\\approx50'], [2.3, '200', '10^{2{,}30}=100\\times10^{0{,}30}\\approx200'], [-0.3, '0{,}5', '10^{-0{,}30}\\approx\\dfrac12=0{,}5'], [-0.7, '0{,}2', '10^{-0{,}70}\\approx\\dfrac15=0{,}2']]);
@@ -2618,12 +2670,6 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const tau = pick([0.2, 0.4, 0.8, 0.05, 0.04, 0.008, 0.003, 0.007]); const val = 1 / tau;
     return { text: 'Un système du premier ordre a pour constante de temps $\\tau=' + d(tau) + '$ s. Quelle est sa pulsation de coupure à $-3$ dB, $\\omega_c=\\dfrac{1}{\\tau}$ ?', val, unit: 'rad/s',
       steps: ['Méthode : $\\omega_c=\\dfrac{1}{\\tau}$ ; écrire $\\tau$ sous la forme $b\\times10^{e}$ avec $b$ entre $1$ et $9$, puis utiliser l\'inverse de $b$.', '$\\dfrac{1}{' + d(tau) + '}\\approx' + fmt(val) + '$ rad/s.'], aid: 'Inverses : $\\dfrac13\\approx0{,}33$ ; $\\dfrac17\\approx0{,}143$ ; $\\dfrac18=0{,}125$ ; $\\dfrac15=0{,}2$ ; $\\dfrac14=0{,}25$.', bad: [tau * 10, val * 2 * Math.PI, val / 10] };
-  }
-  const D2 = { 0.2: 52.7, 0.3: 37.2, 0.4: 25.4, 0.5: 16.3, 0.6: 9.5, 0.7: 4.6 };
-  function tDepassement() {
-    const z = pick([0.2, 0.3, 0.4, 0.5, 0.6, 0.7]); const val = 100 * Math.exp(-Math.PI * z / Math.sqrt(1 - z * z));
-    return { text: 'Un système du second ordre a un coefficient d\'amortissement $\\xi=' + d(z) + '$. Quel est son premier dépassement relatif $D_1=100\\,e^{-\\pi\\xi/\\sqrt{1-\\xi^2}}$ ?', val, sig: 2, unit: '%',
-      steps: ['Méthode : retenir quelques valeurs : $\\xi=0{,}3\\Rightarrow37\\ \\%$ ; $\\xi=0{,}5\\Rightarrow16\\ \\%$ ; $\\xi=0{,}7\\Rightarrow5\\ \\%$.', 'Ici, $\\xi=' + d(z) + '$ : $D_1\\approx' + fmt(D2[z], 2) + '\\ \\%$.', 'Contrôle : $\\sqrt{1-' + d(z) + '^2}\\approx' + fmt(Math.sqrt(1 - z * z), 2) + '$, donc l\'exposant vaut $-\\dfrac{3{,}14\\times' + d(z) + '}{' + fmt(Math.sqrt(1 - z * z), 2) + '}\\approx-' + fmt(Math.PI * z / Math.sqrt(1 - z * z), 2) + '$.'], aid: 'Repères : $\\xi=0{,}3\\Rightarrow37\\ \\%$ ; $\\xi=0{,}5\\Rightarrow16\\ \\%$ ; $\\xi=0{,}7\\Rightarrow5\\ \\%$.', bad: [100 * z, 100 * (1 - z), val * 2] };
   }
   function tQdb() {
     const z = pick([0.05, 0.1, 0.125, 0.25]); const Q = 1 / (2 * z); const val = 20 * Math.log10(Q);
@@ -2679,15 +2725,107 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return { text: 'Un récepteur est alimenté sous $U=' + U + '$ V et absorbe un courant $I=' + I + '$ A. Quelle est la puissance absorbée $P=UI$ ?', val: kw ? P / 1000 : P, unit: kw ? 'kW' : 'W', steps: ['Méthode : $P=UI$ avec $U$ en V et $I$ en A.', '$P=' + U + '\\times' + I + '=' + P + '$ W' + (kw ? ', soit $' + fmt(P / 1000) + '$ kW.' : '.')], aid: 'Décomposer : $230\\times15=230\\times10+230\\times5$.', bad: [U + I, U / I, P * 10] };
   }
 
+  // ======================= Unités et homogénéité =======================
+  // chaque cas : formule, grandeurs avec leur unité, unité du résultat et raisonnement. Les unités sont écrites en TeX.
+  const mr = (u) => '\\mathrm{' + u + '}';
+  const UCASES = [
+    { f: 'P=C\\,\\omega', q: [['C', 'N.m'], ['\\omega', 'rad/s']], res: 'P', ans: 'W', bad: ['J', 'N', 'N.m'], uf: [['N.m', 1], ['rad/s', 1]], how: '$\\mathrm{N.m}\\times\\mathrm{rad/s}=\\mathrm{J/s}=\\mathrm{W}$ : le radian est sans dimension et $1\\ \\mathrm{J/s}=1\\ \\mathrm{W}$.' },
+    { f: 'E=P\\,t', q: [['P', 'W'], ['t', 's']], res: 'E', ans: 'J', bad: ['W', 'kW', 'N'], uf: [['W', 1], ['s', 1]], how: '$\\mathrm{W}\\times\\mathrm{s}=\\dfrac{\\mathrm{J}}{\\mathrm{s}}\\times\\mathrm{s}=\\mathrm{J}$.' },
+    { f: 'E=P\\,t', q: [['P', 'kW'], ['t', 'h']], res: 'E', ans: 'kWh', bad: ['kW', 'kJ', 'J'], uf: [['kW', 1], ['h', 1]], how: '$\\mathrm{kW}\\times\\mathrm{h}=\\mathrm{kWh}$, avec $1\\ \\mathrm{kWh}=3{,}6\\times10^{6}\\ \\mathrm{J}$.' },
+    { f: 'E=P\\,t', q: [['P', 'kW'], ['t', 's']], res: 'E', ans: 'kJ', bad: ['J', 'kWh', 'kW'], uf: [['kW', 1], ['s', 1]], how: '$\\mathrm{kW}\\times\\mathrm{s}=10^{3}\\ \\mathrm{W\\,s}=10^{3}\\ \\mathrm{J}=\\mathrm{kJ}$.' },
+    { f: '\\sigma=\\dfrac{N}{S}', q: [['N', 'N'], ['S', 'mm^2']], res: '\\sigma', ans: 'MPa', bad: ['Pa', 'N', 'GPa'], uf: [['N', 1], ['mm^2', -1]], how: '$\\dfrac{\\mathrm{N}}{\\mathrm{mm^2}}=10^{6}\\ \\dfrac{\\mathrm{N}}{\\mathrm{m^2}}=\\mathrm{MPa}$.' },
+    { f: '\\sigma=\\dfrac{N}{S}', q: [['N', 'kN'], ['S', 'mm^2']], res: '\\sigma', ans: 'GPa', bad: ['MPa', 'kPa', 'kN'], uf: [['kN', 1], ['mm^2', -1]], how: '$\\dfrac{\\mathrm{kN}}{\\mathrm{mm^2}}=10^{3}\\ \\dfrac{\\mathrm{N}}{\\mathrm{mm^2}}=10^{3}\\ \\mathrm{MPa}=\\mathrm{GPa}$.' },
+    { f: 'v=\\omega\\,R', q: [['\\omega', 'rad/s'], ['R', 'm']], res: 'v', ans: 'm/s', bad: ['rad/s', 'm/s^2', 'rad'], uf: [['rad/s', 1], ['m', 1]], how: '$\\mathrm{rad/s}\\times\\mathrm{m}=\\mathrm{m/s}$ : le radian est sans dimension.' },
+    { f: 'v=\\omega\\,R', q: [['\\omega', 'rad/s'], ['R', 'mm']], res: 'v', ans: 'mm/s', bad: ['m/s', 'rad/s', 'mm/s^2'], uf: [['rad/s', 1], ['mm', 1]], how: '$\\mathrm{rad/s}\\times\\mathrm{mm}=\\mathrm{mm/s}$.' },
+    { f: 'F=m\\,g', q: [['m', 'kg'], ['g', 'm/s^2']], res: 'F', ans: 'N', bad: ['kg', 'N.m', 'J'], uf: [['kg', 1], ['m/s^2', 1]], how: '$\\mathrm{kg}\\times\\mathrm{m/s^2}=\\mathrm{N}$.' },
+    { f: 'C=F\\,d', q: [['F', 'N'], ['d', 'm']], res: 'C', ans: 'N.m', bad: ['N', 'W', 'N/m'], uf: [['N', 1], ['m', 1]], how: '$\\mathrm{N}\\times\\mathrm{m}=\\mathrm{N.m}$.' },
+    { f: 'C=F\\,d', q: [['F', 'N'], ['d', 'mm']], res: 'C', ans: 'N.mm', bad: ['N.m', 'N', 'W'], uf: [['N', 1], ['mm', 1]], how: '$\\mathrm{N}\\times\\mathrm{mm}=\\mathrm{N.mm}$, avec $1\\ \\mathrm{N.mm}=10^{-3}\\ \\mathrm{N.m}$.' },
+    { f: 'C=\\dfrac{P}{\\omega}', q: [['P', 'W'], ['\\omega', 'rad/s']], res: 'C', ans: 'N.m', bad: ['W', 'N', 'N/m'], uf: [['W', 1], ['rad/s', -1]], how: '$\\dfrac{\\mathrm{W}}{\\mathrm{rad/s}}=\\dfrac{\\mathrm{J/s}}{1/\\mathrm{s}}=\\mathrm{J}=\\mathrm{N.m}$.' },
+    { f: 'C=\\dfrac{P}{\\omega}', q: [['P', 'kW'], ['\\omega', 'rad/s']], res: 'C', ans: 'kN.m', bad: ['N.m', 'kW', 'kN'], uf: [['kW', 1], ['rad/s', -1]], how: '$\\dfrac{\\mathrm{kW}}{\\mathrm{rad/s}}=10^{3}\\ \\dfrac{\\mathrm{W}}{\\mathrm{rad/s}}=10^{3}\\ \\mathrm{N.m}=\\mathrm{kN.m}$.' },
+    { f: '\\Delta L=\\dfrac{N\\,L_0}{E\\,S}', q: [['N', 'N'], ['L_0', 'mm'], ['E', 'MPa'], ['S', 'mm^2']], res: '\\Delta L', ans: 'mm', bad: ['m', 'MPa', 'mm^2'], uf: [['N', 1], ['mm', 1], ['MPa', -1], ['mm^2', -1]], how: '$\\dfrac{\\mathrm{N}\\times\\mathrm{mm}}{\\mathrm{N/mm^2}\\times\\mathrm{mm^2}}=\\dfrac{\\mathrm{N\\,mm}}{\\mathrm{N}}=\\mathrm{mm}$.' },
+    { f: '\\omega_c=\\dfrac{1}{\\tau}', q: [['\\tau', 'ms']], res: '\\omega_c', ans: 'krad/s', bad: ['rad/s', 'ms', 'Hz'], uf: [['ms', -1]], how: '$\\dfrac{1}{\\mathrm{ms}}=\\dfrac{1}{10^{-3}\\ \\mathrm{s}}=10^{3}\\ \\mathrm{s^{-1}}=\\mathrm{krad/s}$.' },
+    { f: 'Q=I\\,t', q: [['I', 'A'], ['t', 'h']], res: 'Q', ans: 'Ah', bad: ['A', 'C', 'Wh'], uf: [['A', 1], ['h', 1]], how: '$\\mathrm{A}\\times\\mathrm{h}=\\mathrm{Ah}$, avec $1\\ \\mathrm{Ah}=3600\\ \\mathrm{C}$.' },
+    { f: 'W=U\\,Q', q: [['U', 'V'], ['Q', 'Ah']], res: 'W', ans: 'Wh', bad: ['Ah', 'W', 'J'], uf: [['V', 1], ['Ah', 1]], how: '$\\mathrm{V}\\times\\mathrm{A}\\times\\mathrm{h}=\\mathrm{W\\,h}$.' },
+    { f: 'P=U\\,I', q: [['U', 'V'], ['I', 'mA']], res: 'P', ans: 'mW', bad: ['W', 'kW', 'mJ'], uf: [['V', 1], ['mA', 1]], how: '$\\mathrm{V}\\times\\mathrm{mA}=10^{-3}\\ \\mathrm{V\\,A}=\\mathrm{mW}$.' },
+  ];
+  const showU = (u) => '\\mathrm{' + u.replace(/\^2/g, '^{2}') + '}';
+  function tUnit() {
+    const c = pick(UCASES);
+    const qs = c.q.map((x) => '$' + x[0] + '$ en $' + showU(x[1]) + '$').join(', ').replace(/, ([^,]*)$/, ' et $1');
+    const all = shuffle([{ u: c.ans, ok: true }].concat(c.bad.map((u) => ({ u, ok: false }))));
+    return {
+      theme: 'num', family: 'n_unit', famLabel: FAM.n_unit, text: 'On calcule $' + c.f + '$ avec ' + qs + '. Quelle est l\'unité de $' + c.res + '$ ?', math: null, choiceKind: 'text',
+      choices: all.map((x) => '$' + showU(x.u) + '$'), correctIndex: all.findIndex((x) => x.ok),
+      steps: ['Méthode : remplacer chaque grandeur par son unité dans la formule, puis simplifier comme une expression algébrique.', 'Unité de $' + c.res + '$ : ' + c.how],
+      aid: 'Rappels : $1\\ \\mathrm{N.m}=1\\ \\mathrm{J}$ ; $1\\ \\mathrm{W}=1\\ \\mathrm{J/s}$ ; $1\\ \\mathrm{MPa}=1\\ \\mathrm{N/mm^2}$ ; le radian est sans dimension.', exact: null, unit: showU(c.ans), uCase: { uf: c.uf, ans: c.ans, bad: c.bad },
+    };
+  }
+
+  // ======================= Développement limité à l'ordre 1 : (1+x)^α ≈ 1+αx =======================
+  const aidDl = 'Développement limité : $(1+x)^{\\alpha}\\approx1+\\alpha x$ pour $x$ petit, par exemple $\\sqrt{1+x}\\approx1+\\dfrac{x}{2}$ et $\\dfrac{1}{1+x}\\approx1-x$.';
+  const dx = (x) => d(+x.toFixed(4));
+  function tDlEcart() {
+    const k = pick(['pow', 'pow', 'root', 'inv', 'rinv', 'dec']);
+    let expr, val, a, x, steps;
+    if (k === 'pow') {
+      const n = pick([3, 4, 5, 6, 10]); x = n >= 6 ? 0.01 : pick([0.01, 0.02]); a = n;
+      expr = '(1{,}0' + Math.round(x * 100) + ')^{' + n + '}-1'; val = Math.pow(1 + x, n) - 1;
+      steps = ['Méthode : pour $x$ petit, $(1+x)^{\\alpha}\\approx1+\\alpha x$. Ici $x=' + dx(x) + '$ et $\\alpha=' + n + '$.', '$(1+' + dx(x) + ')^{' + n + '}\\approx1+' + n + '\\times' + dx(x) + '=' + dx(1 + n * x) + '$.', 'Donc $' + expr + '\\approx' + n + '\\times' + dx(x) + '=' + dx(n * x) + '$.'];
+    } else if (k === 'root') {
+      x = pick([0.02, 0.04, 0.06]); expr = '\\sqrt{1{,}0' + Math.round(x * 100) + '}-1'; val = Math.sqrt(1 + x) - 1;
+      steps = ['Méthode : $\\sqrt{1+x}=(1+x)^{1/2}\\approx1+\\dfrac{x}{2}$ pour $x$ petit. Ici $x=' + dx(x) + '$.', '$\\sqrt{1+' + dx(x) + '}\\approx1+\\dfrac{' + dx(x) + '}{2}=' + dx(1 + x / 2) + '$.', 'Donc $' + expr + '\\approx\\dfrac{' + dx(x) + '}{2}=' + dx(x / 2) + '$.'];
+    } else if (k === 'inv') {
+      x = pick([0.02, 0.03, 0.05]); expr = '1-\\dfrac{1}{1{,}0' + Math.round(x * 100) + '}'; val = 1 - 1 / (1 + x);
+      steps = ['Méthode : $\\dfrac{1}{1+x}=(1+x)^{-1}\\approx1-x$ pour $x$ petit. Ici $x=' + dx(x) + '$.', '$\\dfrac{1}{1+' + dx(x) + '}\\approx1-' + dx(x) + '=' + dx(1 - x) + '$.', 'Donc $' + expr + '\\approx1-(1-' + dx(x) + ')=' + dx(x) + '$.'];
+    } else if (k === 'rinv') {
+      x = pick([0.02, 0.04, 0.06]); expr = '1-\\dfrac{1}{\\sqrt{1{,}0' + Math.round(x * 100) + '}}'; val = 1 - 1 / Math.sqrt(1 + x);
+      steps = ['Méthode : $\\dfrac{1}{\\sqrt{1+x}}=(1+x)^{-1/2}\\approx1-\\dfrac{x}{2}$ pour $x$ petit. Ici $x=' + dx(x) + '$.', '$\\dfrac{1}{\\sqrt{1+' + dx(x) + '}}\\approx1-\\dfrac{' + dx(x) + '}{2}=' + dx(1 - x / 2) + '$.', 'Donc $' + expr + '\\approx\\dfrac{' + dx(x) + '}{2}=' + dx(x / 2) + '$.'];
+    } else {
+      const n = pick([2, 3, 4, 5]); x = pick([0.01, 0.02]); expr = '1-(0{,}9' + (10 - Math.round(x * 100)) + ')^{' + n + '}'; val = 1 - Math.pow(1 - x, n);
+      steps = ['Méthode : pour $x$ petit, $(1+x)^{\\alpha}\\approx1+\\alpha x$, ici avec $x=-' + dx(x) + '$ et $\\alpha=' + n + '$.', '$(1-' + dx(x) + ')^{' + n + '}\\approx1-' + n + '\\times' + dx(x) + '=' + dx(1 - n * x) + '$.', 'Donc $' + expr + '\\approx1-(1-' + n + '\\times' + dx(x) + ')=' + dx(n * x) + '$.'];
+    }
+    const lin = k === 'pow' || k === 'dec' ? a : 0;
+    return { text: 'Pour $x$ petit devant $1$, $(1+x)^{\\alpha}\\approx1+\\alpha x$. Estimer $' + expr + '$.', val, sig: 2, steps, aid: aidDl, bad: [x, 2 * val, val / 2, 1 + val, 10 * val] };
+  }
+  const DLC = [
+    { ctx: 'Le moment quadratique d\'une section rectangulaire de largeur $b$ et de hauteur $h$ vaut $I=\\dfrac{b\\,h^{3}}{12}$.', v: 'la hauteur $h$', t: 'le moment quadratique $I$', al: 3, dir: 1, xs: [1, 2] },
+    { ctx: 'L\'aire d\'une section circulaire de diamètre $D$ vaut $S=\\dfrac{\\pi D^{2}}{4}$.', v: 'le diamètre $D$', t: 'l\'aire $S$', al: 2, dir: 1, xs: [1, 2, 3] },
+    { ctx: 'La flèche en bout d\'une poutre console de longueur $L$ vaut $f=\\dfrac{F\\,L^{3}}{3EI}$.', v: 'la longueur $L$', t: 'la flèche $f$', al: 3, dir: 1, xs: [1, 2] },
+    { ctx: 'La contrainte normale maximale en flexion vaut $\\sigma=\\dfrac{6M}{b\\,h^{2}}$.', v: 'la hauteur $h$', t: 'la contrainte $\\sigma$', al: -2, dir: -1, xs: [1, 2, 3] },
+    { ctx: 'La pulsation propre d\'un oscillateur vaut $\\omega_0=\\sqrt{\\dfrac{k}{m}}$.', v: 'la raideur $k$', t: 'la pulsation propre $\\omega_0$', al: 0.5, dir: 1, xs: [2, 3] },
+    { ctx: 'La période d\'un oscillateur vaut $T=2\\pi\\sqrt{\\dfrac{m}{k}}$.', v: 'la masse $m$', t: 'la période $T$', al: 0.5, dir: -1, xs: [2, 3] },
+    { ctx: 'Le moment quadratique polaire d\'une section circulaire de diamètre $D$ vaut $I_0=\\dfrac{\\pi D^{4}}{32}$.', v: 'le diamètre $D$', t: 'le moment quadratique polaire $I_0$', al: 4, dir: -1, xs: [1, 2] },
+    { ctx: 'La contrainte de torsion maximale d\'un arbre plein de diamètre $D$ vaut $\\tau=\\dfrac{16\\,M_t}{\\pi D^{3}}$.', v: 'le diamètre $D$', t: 'la contrainte $\\tau$', al: -3, dir: 1, xs: [1, 2] },
+  ];
+  function tDlVar() {
+    const c = pick(DLC); const x = pick(c.xs) / 100; const sgn = c.dir; // sens de variation de la donnée
+    const val = 100 * Math.abs(Math.pow(1 + sgn * x, c.al) - 1);
+    const up = c.al * sgn > 0; // la grandeur augmente si αs > 0
+    const alT = c.al === 0.5 ? '\\dfrac{1}{2}' : String(c.al);
+    const lin = c.al * sgn * x; const xs = dx(x);
+    const aT = Math.abs(c.al) === 0.5 ? '\\dfrac{1}{2}' : String(Math.abs(c.al));
+    const bad = [100 * x, 100 * x * (Math.abs(c.al) + 1), 100 * x / Math.abs(c.al), 100 * x * Math.abs(c.al) * 2];
+    return { text: c.ctx + ' ' + c.v.charAt(0).toUpperCase() + c.v.slice(1) + ' ' + (sgn > 0 ? 'augmente' : 'diminue') + ' de $' + d(Math.round(x * 100)) + '\\ \\%$. À l\'aide d\'un développement limité à l\'ordre 1, de combien de pour cent ' + c.t + ' ' + (up ? 'augmente-t-il' : 'diminue-t-il').replace('-il', c.t.startsWith('la ') || c.t.startsWith('l\'aire') ? '-elle' : '-il') + ' approximativement ?', val, sig: 2, unit: '%',
+      steps: ['Méthode : la grandeur varie comme une puissance, $G\\propto(1' + (sgn > 0 ? '+' : '-') + 'x)^{\\alpha}$, où $x$ est la variation relative de la donnée. Pour $x$ petit, $(1+x)^{\\alpha}\\approx1+\\alpha x$.', 'Ici $x=' + (sgn > 0 ? '+' : '-') + xs + '$ et $\\alpha=' + alT + '$ : $(1' + (sgn > 0 ? '+' : '-') + xs + ')^{' + alT + '}\\approx1' + (lin >= 0 ? '+' : '-') + aT + '\\times' + xs + '=' + dx(1 + lin) + '$.', 'La variation relative est d\'environ $' + dx(Math.abs(lin)) + '$, soit ' + (up ? 'une augmentation' : 'une diminution') + ' de $' + fmt(Math.abs(lin) * 100, 2) + '\\ \\%$.'], aid: aidDl, bad };
+  }
+  function tDlTube() {
+    const D = pick([100, 150, 200, 250]); const t = pick([1, 1.5, 2, 3].filter((v) => v / D <= 0.02)); const r = 2 * t / D;
+    const val = Math.PI / 64 * (Math.pow(D, 4) - Math.pow(D - 2 * t, 4)); const dl = Math.PI * Math.pow(D, 3) * t / 8;
+    return { text: 'Un tube de diamètre extérieur $D=' + d(D) + '$ mm et d\'épaisseur $t=' + d(t) + '$ mm a pour moment quadratique $I=\\dfrac{\\pi}{64}\\left(D^{4}-d^{4}\\right)$, avec $d=D-2t$. Estimer $I$ en mettant $D^{4}$ en facteur pour faire apparaître $1-\\dfrac{2t}{D}$, puis en utilisant un développement limité à l\'ordre 1.', val, sig: 2, unit: 'mm^4',
+      steps: ['Méthode : mettre $D^{4}$ en facteur pour faire apparaître $1+x$ : $I=\\dfrac{\\pi D^{4}}{64}\\left[1-\\left(1-\\dfrac{2t}{D}\\right)^{4}\\right]$.', 'Ici $x=-\\dfrac{2t}{D}=-' + dx(r) + '$, petit devant $1$ : $\\left(1-\\dfrac{2t}{D}\\right)^{4}\\approx1-4\\times\\dfrac{2t}{D}$.', 'Donc $1-\\left(1-\\dfrac{2t}{D}\\right)^{4}\\approx\\dfrac{8t}{D}$ et $I\\approx\\dfrac{\\pi D^{4}}{64}\\times\\dfrac{8t}{D}=\\dfrac{\\pi D^{3}t}{8}$.', 'Application numérique : $\\dfrac{3{,}14\\times' + d(D) + '^{3}\\times' + d(t) + '}{8}\\approx' + fmt(dl, 3) + '$ mm⁴.'], aid: aidDl, bad: [dl * 2, dl / 2, Math.PI * D * D * D * t / 4 * 10, Math.PI * Math.pow(D, 4) / 64] };
+  }
+
   const GROUPS = {
     n_mult: [tMulKey, tMulKey, tMulDec, tSquare, tPow10, tPow10],
     n_inv: [tInv1, tDivInt, tDivInt, tFrac],
     n_const: [tConstMul, tConstMul, tConstDiv, tSqrtInt, tTrig, tAngle, tExp],
-    n_log: [tDb, tDb, tDbInv, tDbInv, tLog10, tLn, tAntilog],
-    n_phys: [tOmega, tNfromOmega, tPower, tTorque, tReducteur, tCoupleRed, tTau, tDepassement, tQdb, tTraction, tAllong, tFlexion, tTorsion, tVitesse, tPoids, tBatterie, tPuissElec],
+    n_log: [tDb, tDb, tDbInv, tDbInv, tLog10, tAntilog, tDbSum, tBodeAsym, tBodeInt, tPente],
+    n_unit: [tUnit],
+    n_dl: [tDlEcart, tDlVar, tDlVar, tDlTube],
+    n_phys: [tOmega, tNfromOmega, tPower, tTorque, tReducteur, tCoupleRed, tTau, tQdb, tTraction, tAllong, tFlexion, tTorsion, tVitesse, tPoids, tBatterie, tPuissElec],
   };
   const FAMILIES = {};
-  Object.keys(GROUPS).forEach((k) => { FAMILIES[k] = () => build(k, pick(GROUPS[k])()); });
+  Object.keys(GROUPS).forEach((k) => { FAMILIES[k] = k === 'n_unit' ? () => tUnit() : () => build(k, pick(GROUPS[k])()); });
 
   const key = (q) => q.text;
   function generateSet(families, n) {
@@ -2699,7 +2837,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
-  const api = { FAM, FAMILIES, GROUPS, generateSet, fmt, build, TOL, FAR };
+  const api = { FAM, FAMILIES, GROUPS, generateSet, fmt, build, TOL, FAR, UCASES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.NumApp = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2840,11 +2978,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const { pick, shuffle, randint, R } = QM.util;
 
   const FAM = {
-    s_ft: 'Fonction de transfert d\'un schéma bloc',
-    s_lit: 'Fonction de transfert littérale',
+    s_ft: 'FTBF : forme canonique (numérique)',
+    s_lit: 'FTBF : forme canonique (littérale)',
+    s_bo: 'FTBO : forme canonique',
+    s_pr: 'Poursuite et régulation',
     s_frac: 'Fractions de fractions',
-    s_ident: 'Ordre, classe et paramètres',
+    s_ident: 'Ordre, classe, gain et paramètres',
   };
+
 
   // ======================= Fractions exactes =======================
   const gcd = (a, b) => { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) { [a, b] = [b, a % b]; } return a; };
@@ -3055,8 +3196,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const classOf = (rf) => PM.low(rf.D);
 
   const rnd = () => R.rand();
-  let PR = false; // option : poursuite et régulation (schémas avec perturbation)
-  let POS = false; // option : retour positif possible (signe + sur le retour du comparateur)
+    let POS = false; // option : retour positif possible (signe + sur le retour du comparateur)
   function wpick(pairs) { let t = 0; pairs.forEach((p) => { t += p[1]; }); let x = rnd() * t; for (const p of pairs) { x -= p[1]; if (x < 0) return p[0]; } return pairs[0][0]; }
 
   // construction aléatoire d'un schéma (descripteurs puis instanciation dans l'ordre de lecture)
@@ -3100,8 +3240,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const xi = A1.mul(w0).div(new Fr(2)); if (xi.decStr(2) === null || w0.decStr(1) === null) return null;
     return { w0, xi };
   }
-  function checkScheme(s) {
-    const lit = s.lit; const ev = evalScheme(s); const T = ev.T;
+  const loopRF = (ev) => ({ N: PM.mul(ev.G.N, ev.H.N), D: PM.mul(ev.G.D, ev.H.D) }); // FTBO = G H_r, sans le signe du comparateur
+  function checkScheme(s, mode) {
+    const lit = s.lit; const ev = evalScheme(s); const T = mode === 'bo' ? loopRF(ev) : ev.T;
     const od = orderOf(T), cl = classOf(T);
     if (od < 1 || od > 3 || cl > 2) return null;
     if (PM.deg(T.N) > 1 || PM.deg(T.N) >= od) return null;
@@ -3123,10 +3264,10 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     try { ptex(T.N); ptex(T.D); canonTeX(c); } catch (e) { return null; }
     return { ev, T, c, sec, order: od, cls: cl };
   }
-  function makeScheme(lit, need) {
+  function makeScheme(lit, need, mode) {
     const wantPos = POS && rnd() < 0.4;
     for (let k = 0; k < 6000; k++) {
-      const s = randomScheme(lit, wantPos && k < 4000); const a = checkScheme(s); if (!a) continue;
+      const s = randomScheme(lit, wantPos && k < 4000); const a = checkScheme(s, mode); if (!a) continue;
       if (need && !need(a)) continue;
       return Object.assign({ s }, a);
     }
@@ -3167,6 +3308,48 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const mpPart = (a) => { const t = mpTeX(a); return t === '1' ? '' : (Object.keys(a).length > 1 ? '\\left(' + t + '\\right)' : t); };
 
   // ======================= Correction détaillée =======================
+  // normalisation, forme canonique et identification (communes à la FTBF et à la FTBO)
+  function tailSteps(E, curN, curD, steps, nm) {
+    const { c } = E; nm = nm || 'H(p)';
+    // 6. Normalisation
+    const al = c.alpha;
+    const hd = [];
+    let lead;
+    if (al > 0) {
+      const inner = ptex(c.Dp);
+      lead = 'Le dénominateur ne comporte pas de terme constant : factoriser $p' + (al > 1 ? '^{' + al + '}' : '') + '$ :\n$$' + nm + '=\\dfrac{' + ptex(curN) + '}{p' + (al > 1 ? '^{' + al + '}' : '') + (inner === '1' ? '' : '\\left(' + inner + '\\right)') + '}$$\n';
+    } else lead = '';
+    const d0t = mpTeX(c.d0), n0t = mpTeX(c.n0);
+    const rawNumer = frac(n0t, d0t) ;
+    const rawK = '\\dfrac{' + n0t + '}{' + d0t + '}';
+    const rawPoly = (arr, base) => { let out = '1'; arr.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+' + (mpEq(base, mpOne) ? '' : '\\dfrac{' + mpTeX(q) + '}{' + mpTeX(base) + '}') + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; };
+    const rawDen = rawPoly(c.Dp.map((q, i) => (i === 0 ? mpOne : q)), c.d0);
+    const rawDenFix = (() => { let out = '1'; c.Dp.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + d0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; })();
+    const rawNum2 = c.Np.length > 1 ? (() => { let out = '1'; c.Np.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + n0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return '\\left(' + out + '\\right)'; })() : '';
+    const pw = al === 0 ? '' : al === 1 ? 'p' : 'p^{' + al + '}';
+    const rawDenAll = al === 0 ? rawDenFix : pw + '\\left(' + rawDenFix + '\\right)';
+    const rawHtex = '\\dfrac{' + rawK + rawNum2 + '}{' + rawDenAll + '}';
+    if (lead) steps.push(lead.trim());
+    steps.push('**Mettre sous forme canonique** : le terme de plus bas degré non nul du dénominateur doit valoir $1$. Diviser le numérateur et le dénominateur par ce terme, ici $d_0=' + d0t + '$' + (c.Np.length > 1 ? ', et mettre aussi le numérateur sous la forme $K(1+\\dots)$ en divisant par son terme constant $n_0=' + n0t + '$' : '') + '. Le gain devient $K=\\dfrac{' + n0t + '}{' + d0t + '}$ :\n$$' + nm + '=' + rawHtex + '$$\nsoit, après simplification des fractions :\n$$' + nm + '=' + canonTeX(c) + '$$');
+
+    // 7. Identification
+    const od = E.order, cl = E.cls;
+    const Kt = ratioTeX(c.K);
+    const id = ['**Identifier** : ordre $' + od + '$ (degré du dénominateur), classe $' + cl + '$ (' + (cl === 0 ? 'aucun pôle nul, donc aucun terme $p$ en facteur' : 'puissance de $p$ mise en facteur du dénominateur') + '), gain ' + (cl === 0 ? 'statique ' : '') + '$K=' + Kt + '$' + '.'];
+    const quad = (c2, intro) => {
+      const w = omegaXi(c2);
+      return intro + 'Identification des termes en $p$ et en $p^{2}$ :\n$$\\dfrac{2\\xi}{\\omega_0}=' + ratioTeX(c2.a[1]) + '\\qquad\\dfrac{1}{\\omega_0^{2}}=' + ratioTeX(c2.a[2]) + '$$\n$$\\omega_0=' + w.w0Tex + '\\qquad\\xi=\\dfrac{\\omega_0}{2}\\times' + (mpEq(c2.a[1].den, mpOne) ? mpFactor(c2.a[1].num) : '\\left(' + ratioTeX(c2.a[1]) + '\\right)') + '=' + w.xiTex + '$$';
+    };
+    const SEC = '$1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}$';
+    if (od - cl === 1 && cl === 0) id.push('Premier ordre : forme $\\dfrac{K}{1+\\tau p}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
+    else if (od === 2 && cl === 0) id.push(quad(c, 'Second ordre : forme canonique $\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}}$. '));
+    else if (od - cl === 1) id.push((cl === 1 ? 'Un intégrateur' : 'Deux intégrateurs') + ' : forme canonique $\\dfrac{K}{' + (cl === 1 ? 'p' : 'p^{' + cl + '}') + '\\left(1+\\tau p\\right)}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
+    else if (od - cl === 2) id.push(quad(c, 'Le facteur du dénominateur est du second ordre, de la forme ' + SEC + '. '));
+    else if (od === cl) id.push((cl === 1 ? 'Un intégrateur pur' : 'Deux intégrateurs purs') + ' : forme canonique $\\dfrac{K}{' + (cl === 1 ? 'p' : 'p^{' + cl + '}') + '}$, sans paramètre de temps à identifier.');
+    else id.push('Troisième ordre sans intégrateur : pas de paramètres $\\xi$ et $\\omega_0$ à identifier.');
+    steps.push(id[0] + (id.length > 1 ? '\n' + id.slice(1).join('\n') : ''));
+    return steps;
+  }
   function explain(s, E, o) {
     o = o || {};
     const { T, c } = E; const lit = s.lit; const steps = [];
@@ -3189,7 +3372,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
 
     // 2. Black
     const ghTeX = (hasFb ? hTeX + '\\times' : '') + gTeX;
-    steps.push('**Formule de Black** appliquée à la boucle : ' + (s.pos ? 'avec un signe $+$ sur le retour du comparateur, le signe devant $H_r(p)\\,G(p)$ s\'inverse : $H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}$.' : '$H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}$.') + ' Remplacement :\n$$H_{BF}(p)=\\dfrac{' + gTeX + '}{1' + sg + ghTeX + '}$$');
+    steps.push('**Formule de Black** appliquée à la boucle : ' + (s.pos ? 'avec un signe $+$ sur le retour du comparateur, le signe devant $H_r(p)\\,G(p)$ s\'inverse : $H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}$.' : '$H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}$.') + ' Le produit $H_r(p)\\,G(p)$ est la fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)$. Remplacement :\n$$H_{BF}(p)=\\dfrac{' + gTeX + '}{1' + sg + ghTeX + '}$$');
 
     // 3. Fractions de fractions
     const numFac = prodTeX([mpPart(nG)].concat(dH.length ? [dfDisplay(dH, mpPart(nG) !== '')] : []));
@@ -3223,42 +3406,31 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       steps.push('**Développer** de nouveau pour retrouver un seul polynôme au numérateur et un seul au dénominateur :\n$$H(p)=\\dfrac{' + ptex(curN) + '}{' + ptex(curD) + '}$$');
     }
 
-    // 6. Normalisation
-    const al = c.alpha;
-    const hd = [];
-    let lead;
-    if (al > 0) {
-      const inner = ptex(c.Dp);
-      lead = 'Le dénominateur ne comporte pas de terme constant : factoriser $p' + (al > 1 ? '^{' + al + '}' : '') + '$ :\n$$H(p)=\\dfrac{' + ptex(curN) + '}{p' + (al > 1 ? '^{' + al + '}' : '') + '\\left(' + inner + '\\right)}$$\n';
-    } else lead = '';
-    const d0t = mpTeX(c.d0), n0t = mpTeX(c.n0);
-    const rawNumer = frac(n0t, d0t) ;
-    const rawK = '\\dfrac{' + n0t + '}{' + d0t + '}';
-    const rawPoly = (arr, base) => { let out = '1'; arr.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+' + (mpEq(base, mpOne) ? '' : '\\dfrac{' + mpTeX(q) + '}{' + mpTeX(base) + '}') + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; };
-    const rawDen = rawPoly(c.Dp.map((q, i) => (i === 0 ? mpOne : q)), c.d0);
-    const rawDenFix = (() => { let out = '1'; c.Dp.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + d0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return out; })();
-    const rawNum2 = c.Np.length > 1 ? (() => { let out = '1'; c.Np.forEach((q, i) => { if (i === 0 || mpIsZero(q)) return; out += '+\\dfrac{' + mpTeX(q) + '}{' + n0t + '}' + (i === 1 ? 'p' : 'p^{' + i + '}'); }); return '\\left(' + out + '\\right)'; })() : '';
-    const pw = al === 0 ? '' : al === 1 ? 'p' : 'p^{' + al + '}';
-    const rawDenAll = al === 0 ? rawDenFix : pw + '\\left(' + rawDenFix + '\\right)';
-    const rawHtex = '\\dfrac{' + rawK + rawNum2 + '}{' + rawDenAll + '}';
-    if (lead) steps.push(lead.trim());
-    steps.push('**Mettre sous forme canonique** : le terme de plus bas degré non nul du dénominateur doit valoir $1$. Diviser le numérateur et le dénominateur par ce terme, ici $d_0=' + d0t + '$' + (c.Np.length > 1 ? ', et mettre aussi le numérateur sous la forme $K(1+\\dots)$ en divisant par son terme constant $n_0=' + n0t + '$' : '') + '. Le gain devient $K=\\dfrac{' + n0t + '}{' + d0t + '}$ :\n$$H(p)=' + rawHtex + '$$\nsoit, après simplification des fractions :\n$$H(p)=' + canonTeX(c) + '$$');
-
-    // 7. Identification
-    const od = E.order, cl = E.cls;
-    const Kt = ratioTeX(c.K);
-    const id = ['**Identifier** : ordre $' + od + '$ (degré du dénominateur), classe $' + cl + '$ (' + (cl === 0 ? 'aucun pôle nul, donc aucun terme $p$ en facteur' : 'puissance de $p$ mise en facteur du dénominateur') + '), gain ' + (cl === 0 ? 'statique ' : '') + '$K=' + Kt + '$' + (lit ? '.' : '.')];
-    const quad = (c2, intro) => {
-      const w = omegaXi(c2);
-      return intro + 'Identification des termes en $p$ et en $p^{2}$ :\n$$\\dfrac{2\\xi}{\\omega_0}=' + ratioTeX(c2.a[1]) + '\\qquad\\dfrac{1}{\\omega_0^{2}}=' + ratioTeX(c2.a[2]) + '$$\n$$\\omega_0=' + w.w0Tex + '\\qquad\\xi=\\dfrac{\\omega_0}{2}\\times' + (mpEq(c2.a[1].den, mpOne) ? mpFactor(c2.a[1].num) : '\\left(' + ratioTeX(c2.a[1]) + '\\right)') + '=' + w.xiTex + '$$';
-    };
-    const SEC = '$1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}$';
-    if (od - cl === 1 && cl === 0) id.push('Premier ordre : forme $\\dfrac{K}{1+\\tau p}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
-    else if (od === 2 && cl === 0) id.push(quad(c, 'Second ordre : forme canonique $\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}p+\\dfrac{p^{2}}{\\omega_0^{2}}}$. '));
-    else if (od - cl === 1) id.push((cl === 1 ? 'Un intégrateur' : 'Deux intégrateurs') + ' : forme canonique $\\dfrac{K}{' + (cl === 1 ? 'p' : 'p^{' + cl + '}') + '\\left(1+\\tau p\\right)}$, donc $\\tau=' + ratioTeX(c.a[1]) + '$.');
-    else if (od - cl === 2) id.push(quad(c, 'Le facteur du dénominateur est du second ordre, de la forme ' + SEC + '. '));
-    else id.push('Troisième ordre sans intégrateur : pas de paramètres $\\xi$ et $\\omega_0$ à identifier.');
-    steps.push(id[0] + (id.length > 1 ? '\n' + id.slice(1).join('\n') : ''));
+    return tailSteps(E, curN, curD, steps);
+  }
+  // FTBO : produit des blocs de la boucle (chaîne directe puis chaîne de retour), signe du comparateur exclu
+  const FTBODEF = '**Définition de la FTBO.** La fonction de transfert en boucle ouverte se lit sur la boucle seule : elle part du signal $\\varepsilon(p)$, juste après le comparateur, suit la chaîne directe puis la chaîne de retour, et s\'arrête au signal renvoyé vers le comparateur. Le signe du comparateur n\'en fait pas partie.';
+  function boHead(s) {
+    const hasFb = s.fb.length > 0; const G = s.direct, H = s.fb;
+    const gTeX = chainTeX(G), hTeX = hasFb ? chainTeX(H) : '1';
+    const out = [];
+    const l1 = [FTBODEF];
+    if (s.pre.length) l1.push('Bloc avant le comparateur : $A(p)=' + chainTeX(s.pre) + '$, hors de la boucle, donc exclu de la FTBO.');
+    l1.push('Chaîne directe de la boucle : $G(p)=' + gTeX + '$.');
+    l1.push(hasFb ? 'Chaîne de retour : $H_r(p)=' + hTeX + '$.' : 'Retour unitaire : $H_r(p)=1$.');
+    if (s.post.length) l1.push('Bloc après la prise de sortie : $B(p)=' + chainTeX(s.post) + '$, hors de la boucle, donc exclu de la FTBO.');
+    out.push(l1[0] + '\n- ' + l1.slice(1).join('\n- '));
+    const dAll = dfDisplay(chainDfs(G).concat(chainDfs(H)));
+    const nums = prodTeX([mpPart(chainNum(G)), mpPart(chainNum(H))]);
+    out.push('**Produit des blocs de la boucle** : ' + (s.pos ? 'le signe $+$ du comparateur' : 'le signe $-$ du comparateur') + ' n\'intervient pas dans la FTBO. Les blocs sont en série, donc leurs fonctions de transfert se multiplient :\n$$\\mathrm{FTBO}(p)=G(p)\\,H_r(p)=' + gTeX + (hasFb ? '\\times' + hTeX : '') + '=\\dfrac{' + (nums === '1' ? '1' : nums) + '}{' + dAll + '}$$');
+    return out;
+  }
+  function explainBO(s, E, intro) {
+    const steps = (intro || boHead(s)).slice();
+    const T = E.T;
+    steps.push('**Développer** et ranger les polynômes par puissances croissantes de $p$ :\n$$\\mathrm{FTBO}(p)=\\dfrac{' + ptex(T.N) + '}{' + ptex(T.D) + '}$$');
+    tailSteps(E, T.N, T.D, steps, '\\mathrm{FTBO}(p)');
+    steps[steps.length - 1] += '\nLa classe n\'a d\'utilité que pour la FTBO : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe.';
     return steps;
   }
   // correction d'une question de poursuite et régulation : superposition, puis boucle simple pour chaque cas
@@ -3267,8 +3439,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     const At = chainTeX(P.dA), Bt = chainTeX(P.dB), Ct = hasC ? chainTeX(s.fb) : '1';
     const ren = (st, name) => st.replace(/H_\{BF\}\(p\)/g, name).replace(/(^|[^A-Za-z_}\\])H\(p\)/g, '$1' + name);
     const steps = [];
-    steps.push('**Repérer les blocs.** Le schéma a deux entrées : la consigne $E_1(p)$, qui arrive au comparateur, et la perturbation $E_2(p)$, injectée par le second sommateur. Bloc avant le sommateur de perturbation : $A(p)=' + At + '$. Bloc après ce sommateur : $B(p)=' + Bt + '$. Chaîne de retour : $C(p)=' + Ct + '$' + (hasC ? '' : ' (retour unitaire)') + '. Boucle ouverte : $FTBO(p)=A(p)\\,B(p)\\,C(p)$, avec ' + (s.pos ? 'un retour positif (signe plus sur le retour du comparateur).' : 'un retour négatif (signe moins sur le retour du comparateur).'));
-    steps.push('**Principe de superposition.** Le système est linéaire : l\'effet des deux entrées s\'ajoute. $$\\begin{aligned}S(p)&=H_{pours}(p)\\,E_1(p)\\\\&\\quad+H_{reg}(p)\\,E_2(p)\\end{aligned}$$ Poursuite : perturbation nulle, $E_2(p)=0$. Régulation : consigne nulle, $E_1(p)=0$. Les deux fonctions de transfert ont le même dénominateur $1' + sg + 'FTBO(p)$.');
+    steps.push('**Repérer les blocs.** Le schéma a deux entrées : la consigne $E_1(p)$, qui arrive au comparateur, et la perturbation $E_2(p)$, injectée par le second sommateur. Bloc avant le sommateur de perturbation : $A(p)=' + At + '$. Bloc après ce sommateur : $B(p)=' + Bt + '$. Chaîne de retour : $C(p)=' + Ct + '$' + (hasC ? '' : ' (retour unitaire)') + '. Boucle ouverte : $\\mathrm{FTBO}(p)=A(p)\\,B(p)\\,C(p)$, avec ' + (s.pos ? 'un retour positif (signe plus sur le retour du comparateur).' : 'un retour négatif (signe moins sur le retour du comparateur).'));
+    steps.push('**Principe de superposition.** Le système est linéaire : l\'effet des deux entrées s\'ajoute. $$\\begin{aligned}S(p)&=H_{pours}(p)\\,E_1(p)\\\\&\\quad+H_{reg}(p)\\,E_2(p)\\end{aligned}$$ Poursuite : perturbation nulle, $E_2(p)=0$. Régulation : consigne nulle, $E_1(p)=0$. Les deux fonctions de transfert ont le même dénominateur $1' + sg + '\\mathrm{FTBO}(p)$.');
     if (which !== 'r') {
       const E = P.eP;
       const st = explain(P.sP, E).slice(1, -1);
@@ -3278,7 +3450,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     if (which !== 'p') {
       const E = P.eR;
       const st = explain(P.sR, E).slice(1, -1);
-      steps.push('**Régulation** ($E_1(p)=0$). Le comparateur ne reçoit plus que le retour : $\\varepsilon(p)=' + (s.pos ? '' : '-') + 'C(p)\\,S(p)$. Équations des blocs :\n$$S(p)=B(p)\\left(E_2(p)+A(p)\\,\\varepsilon(p)\\right)$$\n$$S(p)\\left(1' + sg + 'FTBO(p)\\right)=B(p)\\,E_2(p)$$\nVue depuis $E_2$, la chaîne directe est $B(p)$ et le signal revient au sommateur de perturbation en passant par $C(p)$ puis par $A(p)$ : chaîne de retour $H_r(p)=A(p)\\,C(p)=' + chainTeX(P.dA.concat(s.fb)) + '$.');
+      steps.push('**Régulation** ($E_1(p)=0$). Le comparateur ne reçoit plus que le retour : $\\varepsilon(p)=' + (s.pos ? '' : '-') + 'C(p)\\,S(p)$. Équations des blocs :\n$$S(p)=B(p)\\left(E_2(p)+A(p)\\,\\varepsilon(p)\\right)$$\n$$S(p)\\left(1' + sg + '\\mathrm{FTBO}(p)\\right)=B(p)\\,E_2(p)$$\nVue depuis $E_2$, la chaîne directe est $B(p)$ et le signal revient au sommateur de perturbation en passant par $C(p)$ puis par $A(p)$ : chaîne de retour $H_r(p)=A(p)\\,C(p)=' + chainTeX(P.dA.concat(s.fb)) + '$.');
       st.forEach((x) => steps.push(ren(x, 'H_{reg}(p)')));
     }
     return steps;
@@ -3309,9 +3481,20 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const cloneC = (c) => Object.assign({}, c, { a: c.a.slice(), b: c.b.slice() });
   const R1 = { num: mpOne, den: mpOne };
 
-  function wrongCanons(s, E) {
+  function tryRF(rf) { try { if (PM.deg(rf.D) < 0 || mpIsZero(rf.N[0]) || mpIsZero(rf.D[PM.low(rf.D)])) return null; const cc = canon(rf); return cc.beta === 0 ? cc : null; } catch (e) { return null; } }
+  function wrongCanons(s, E, mode) {
     const c = E.c, cands = [], hasFb = s.fb.length > 0;
-    [['noSensor', hasFb], ['signFlip', true], ['openLoop', hasFb], ['numH', hasFb], ['dropPre', s.pre.length], ['dropPost', s.post.length]].forEach(([k, ok]) => {
+    if (mode === 'bo') {
+      const ev = E.ev; const L0 = loopRF(ev); const pre = seriesOf(s.pre), post = seriesOf(s.post);
+      const lst = [];
+      if (hasFb) lst.push({ N: ev.G.N, D: ev.G.D }, { N: PM.mul(ev.G.N, ev.H.N), D: ev.G.D });
+      lst.push(ev.L);
+      if (s.pre.length) lst.push(rfMul(pre, L0));
+      if (s.post.length) lst.push(rfMul(L0, post));
+      if (s.pre.length && s.post.length) lst.push(rfMul(rfMul(pre, L0), post));
+      lst.forEach((rf) => { const cc = tryRF(rf); if (cc) cands.push(cc); });
+    }
+    (mode === 'bo' ? [] : [['noSensor', hasFb], ['signFlip', true], ['openLoop', hasFb], ['numH', hasFb], ['dropPre', s.pre.length], ['dropPost', s.post.length]]).forEach(([k, ok]) => {
       if (!ok) return;
       try { const T = evalScheme(s, { [k]: true }).T; if (PM.deg(T.D) < 0 || mpIsZero(T.N[0]) || mpIsZero(T.D[PM.low(T.D)])) return; const cc = canon(T); if (cc.beta === 0) cands.push(cc); } catch (e) { /* ignoré */ }
     });
@@ -3332,8 +3515,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     }
     return cands;
   }
-  function pickWrong(s, E, extra) {
-    const c = E.c; const cands = shuffle(wrongCanons(s, E).concat(extra || []));
+  function pickWrong(s, E, extra, mode) {
+    const c = E.c; const cands = shuffle(wrongCanons(s, E, mode).concat(extra || []));
     const as = s.lit ? rndAssign(allVars([c].concat(cands))) : {};
     const chosen = []; const seen = new Set([canonTeX(c)]);
     for (const cd of cands) {
@@ -3350,11 +3533,23 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     for (let k = 0; k < 300; k++) {
       const E = makeScheme(lit); const s = E.s; const wr = pickWrong(s, E); if (!wr) continue;
       const all = shuffle([{ tex: canonTeX(E.c), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
-      return Object.assign(baseQ(lit ? 's_lit' : 's_ft', 'Déterminer la fonction de transfert ' + HDEF + ' du système représenté par le schéma bloc ci-dessous (sortie sur entrée), puis la mettre sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.')), {
+      return Object.assign(baseQ(lit ? 's_lit' : 's_ft', 'Déterminer la fonction de transfert en boucle fermée (FTBF) ' + HDEF + ' du système représenté par le schéma bloc ci-dessous (sortie sur entrée), puis la mettre sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.')), {
         choiceKind: 'math', choices: all.map((x) => x.tex), correctIndex: all.findIndex((x) => x.ok), steps: explain(s, E), block: BF ? BF.draw(s) : '', model: specOf(s),
       });
     }
     throw new Error('qCanon');
+  }
+
+  const BODEF = ' On rappelle que la FTBO se lit sur la boucle seule : de $\\varepsilon(p)$, juste après le comparateur, jusqu\'au signal renvoyé vers le comparateur, sans le signe du comparateur.';
+  function qBO(lit) {
+    for (let k = 0; k < 300; k++) {
+      const E = makeScheme(lit, null, 'bo'); const s = E.s; const wr = pickWrong(s, E, null, 'bo'); if (!wr) continue;
+      const all = shuffle([{ tex: canonTeX(E.c), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
+      return Object.assign(baseQ('s_bo', 'Déterminer la fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)$ du système représenté par le schéma bloc ci-dessous, puis la mettre sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.') + BODEF), {
+        choiceKind: 'math', choices: all.map((x) => x.tex), correctIndex: all.findIndex((x) => x.ok), steps: explainBO(s, E), block: BF ? BF.draw(s) : '', model: specOf(s), kind: 'bo',
+      });
+    }
+    throw new Error('qBO');
   }
 
   function qPR(lit) {
@@ -3362,11 +3557,25 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       const P = makeSchemePR(lit); const s = P.s; const cp = P.eP.c, cr = P.eR.c;
       let noA = [];
       try { const cc = canon(evalScheme({ pre: [], direct: P.dB, fb: s.fb, post: [], lit: s.lit, pos: s.pos }).T); if (cc.beta === 0) noA = [cc]; } catch (e) { /* ignoré */ }
-      const variant = wpick([['p', 3], ['r', 3], ['both', 3]]);
+      const variant = wpick([['p', 3], ['r', 3], ['both', 3], ['bo', 3]]);
       const ENT = 'Le système représenté ci-dessous est soumis à une consigne $E_1(p)$ et à une perturbation $E_2(p)$. ';
       const FIN = ' sous forme canonique' + (lit ? ', en fonction des paramètres littéraux.' : '.');
-      let text, choices, correctIndex;
-      if (variant === 'both') {
+      let text, choices, correctIndex, stepsOut;
+      if (variant === 'bo') {
+        const Eb = checkScheme(P.sP, 'bo'); if (!Eb) continue;
+        const rfs = [seriesOf(P.dB.concat(s.fb)), seriesOf(P.dA.concat(P.dB)), seriesOf(P.dA.concat(s.fb))]; const extra = [cp, cr];
+        rfs.forEach((rf) => { const cc = tryRF(rf); if (cc) extra.push(cc); });
+        const wr = pickWrong(P.sP, Eb, extra, 'bo'); if (!wr) continue;
+        const all = shuffle([{ tex: canonTeX(Eb.c), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
+        const reg = rnd() < 0.5;
+        text = ENT + 'Le système fonctionne en ' + (reg ? 'régulation ($E_1(p)=0$)' : 'poursuite ($E_2(p)=0$)') + '. Déterminer sa fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)$, puis la mettre' + FIN + BODEF;
+        choices = all.map((x) => x.tex); correctIndex = all.findIndex((x) => x.ok);
+        const At = chainTeX(P.dA), Bt = chainTeX(P.dB), Ct = s.fb.length ? chainTeX(s.fb) : '1';
+        const intro = ['**Repérer les blocs.** Bloc avant le sommateur de perturbation : $A(p)=' + At + '$. Bloc après ce sommateur : $B(p)=' + Bt + '$. Chaîne de retour : $C(p)=' + Ct + '$' + (s.fb.length ? '' : ' (retour unitaire)') + '.',
+          FTBODEF + ' Ici, en partant de $\\varepsilon(p)$, le signal traverse $A(p)$, le sommateur de perturbation, $B(p)$, puis $C(p)$ avant de revenir au comparateur.',
+          '**La FTBO est la même en poursuite et en régulation.** Mettre $E_1(p)$ ou $E_2(p)$ à zéro ne change pas le chemin de la boucle : seul le choix de l\'entrée et de la sortie change la fonction de transfert en boucle fermée, pas la boucle ouverte. Il ne faut donc pas se limiter à $B(p)\\,C(p)$ en régulation : $A(p)$ fait aussi partie de la boucle.\n$$\\begin{aligned}\\mathrm{FTBO}(p)&=A(p)\\,B(p)\\,C(p)\\\\&=' + chainTeX(s.direct) + (s.fb.length ? '\\times' + Ct : '') + '\\end{aligned}$$'];
+        stepsOut = explainBO(P.sP, Eb, intro);
+      } else if (variant === 'both') {
         const wp = pickWrong(P.sP, P.eP, [cr]), wr = pickWrong(P.sR, P.eR, [cp].concat(noA)); if (!wp || !wr) continue;
         const pair = (a, b) => ({ a, b, tex: '\\begin{array}{l}H_{pours}(p)=' + canonTeX(a) + '\\\\[6pt] H_{reg}(p)=' + canonTeX(b) + '\\end{array}' });
         const truth = pair(cp, cr); const as = lit ? rndAssign(allVars([cp, cr].concat(wp.map((w) => w.c), wr.map((w) => w.c)))) : {};
@@ -3376,15 +3585,15 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         if (chosen.length < 3) continue;
         const all = shuffle([{ x: truth, ok: true }].concat(chosen.map((x) => ({ x, ok: false }))));
         text = ENT + 'Par le principe de superposition, $S(p)=H_{pours}(p)\\,E_1(p)+H_{reg}(p)\\,E_2(p)$. Déterminer les deux fonctions de transfert $H_{pours}(p)$ et $H_{reg}(p)$,' + FIN;
-        choices = all.map((y) => y.x.tex); correctIndex = all.findIndex((y) => y.ok);
+        choices = all.map((y) => y.x.tex); correctIndex = all.findIndex((y) => y.ok); stepsOut = explainPR(P, 'both');
       } else {
         const isP = variant === 'p'; const wr = isP ? pickWrong(P.sP, P.eP, [cr]) : pickWrong(P.sR, P.eR, [cp].concat(noA)); if (!wr) continue;
         const all = shuffle([{ tex: canonTeX(isP ? cp : cr), ok: true }].concat(wr.map((w) => ({ tex: w.tex, ok: false }))));
         text = ENT + (isP ? 'Déterminer la fonction de transfert de poursuite $H_{pours}(p)=\\dfrac{S(p)}{E_1(p)}$, obtenue pour $E_2(p)=0$, puis la mettre' : 'Déterminer la fonction de transfert de régulation $H_{reg}(p)=\\dfrac{S(p)}{E_2(p)}$, obtenue pour $E_1(p)=0$, puis la mettre') + FIN;
-        choices = all.map((x) => x.tex); correctIndex = all.findIndex((x) => x.ok);
+        choices = all.map((x) => x.tex); correctIndex = all.findIndex((x) => x.ok); stepsOut = explainPR(P, variant);
       }
-      return Object.assign(baseQ(lit ? 's_lit' : 's_ft', text), {
-        choiceKind: 'math', choices, correctIndex, steps: explainPR(P, variant === 'both' ? 'both' : variant), block: BF ? BF.draw(s) : '', model: specOf(s), pr: variant,
+      return Object.assign(baseQ('s_pr', text), {
+        choiceKind: 'math', choices, correctIndex, steps: stepsOut, block: BF ? BF.draw(s) : '', model: specOf(s), pr: variant,
       });
     }
     throw new Error('qPR');
@@ -3421,27 +3630,44 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   }
   function qIdent() {
     for (let k = 0; k < 300; k++) {
-      const lit = rnd() < 0.3; const wantQ = rnd() < 0.6;
-      const E = makeScheme(lit, wantQ ? (a) => a.order === 2 && a.cls === 0 && a.c.b.length === 1 : null); const s = E.s;
-      const steps = explain(s, E);
+      const lit = rnd() < 0.3; const wantQ = rnd() < 0.6; const bo = rnd() < 0.45; const mode = bo ? 'bo' : null;
+      const isKxw = (a) => a.order === 2 && a.cls === 0 && a.c.b.length === 1;
+      const E = makeScheme(lit, wantQ ? isKxw : (bo ? null : (a) => a.cls === 0), mode); const s = E.s;
+      const steps = bo ? explainBO(s, E) : explain(s, E);
       const base = (text) => baseQ('s_ident', text);
-      if (E.order === 2 && E.cls === 0 && E.c.b.length === 1) {
+      const WHO = bo ? 'dont la fonction de transfert en boucle ouverte $\\mathrm{FTBO}(p)=G(p)\\,H_r(p)$ (signe du comparateur exclu, blocs hors boucle exclus)' : 'dont la fonction de transfert en boucle fermée (FTBF) est ' + HDEF;
+      if (isKxw(E)) {
         const as = lit ? rndAssign(allVars([E.c])) : {};
         const all = wxChoices(E, lit, as); const truth = all.find((x) => x.ok);
         const wrong = shuffle(all.filter((x) => !x.ok && (lit ? (x.v[0] !== truth.v[0] || x.v[1] !== truth.v[1]) : true))); const seen = new Set([truth.tex]); const ch = [];
         for (const w of wrong) { if (seen.has(w.tex)) continue; seen.add(w.tex); ch.push(w); if (ch.length === 3) break; }
         if (ch.length < 3) continue;
         const fin = shuffle([truth].concat(ch));
-        return Object.assign(base('Le schéma bloc ci-dessous représente un système de fonction de transfert ' + HDEF + ' du second ordre et de classe 0. ' + (lit ? 'Identifier sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$ en fonction des paramètres.' : 'Identifier son gain statique $K$, sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$.')), {
-          choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => x.tex), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'kxw',
+        return Object.assign(base('Le schéma bloc ci-dessous représente un système ' + WHO + ', du second ordre et de classe 0. ' + (lit ? 'Identifier sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$ en fonction des paramètres.' : 'Identifier son gain statique $K$, sa pulsation propre $\\omega_0$ et son coefficient d\'amortissement $\\xi$.')), {
+          choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => x.tex), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'kxw', kind: bo ? 'bo' : 'bf',
         });
       }
-      const pairs = []; for (let o = 1; o <= 3; o++) for (let c = 0; c <= Math.min(2, o); c++) pairs.push([o, c]);
-      const wr = shuffle(pairs.filter((p) => !(p[0] === E.order && p[1] === E.cls))).slice(0, 3);
-      const txt = (p) => 'Ordre $' + p[0] + '$, classe $' + p[1] + '$';
-      const fin = shuffle([[E.order, E.cls]].concat(wr));
-      return Object.assign(base('Quels sont l\'ordre et la classe du système représenté par le schéma bloc ci-dessous, de fonction de transfert ' + HDEF + ' ?'), {
-        choiceKind: 'text', choices: fin.map(txt), correctIndex: fin.findIndex((p) => p[0] === E.order && p[1] === E.cls), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'oc',
+      if (bo) {
+        const pairs = []; for (let o = 1; o <= 4; o++) for (let c = 0; c <= Math.min(3, o); c++) pairs.push([o, c]);
+        const wr = shuffle(pairs.filter((p) => !(p[0] === E.order && p[1] === E.cls))).slice(0, 3);
+        const txt = (p) => 'Ordre $' + p[0] + '$, classe $' + p[1] + '$';
+        const fin = shuffle([[E.order, E.cls]].concat(wr));
+        return Object.assign(base('Quels sont l\'ordre et la classe du système représenté par le schéma bloc ci-dessous, ' + WHO + ' ?'), {
+          choiceKind: 'text', choices: fin.map(txt), correctIndex: fin.findIndex((p) => p[0] === E.order && p[1] === E.cls), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'oc', kind: 'bo',
+        });
+      }
+      // FTBF : ordre et gain statique (la classe n'est demandée que pour la FTBO)
+      const wr = pickWrong(s, E); if (!wr) continue;
+      const ordOf = (c) => c.a.length - 1 + c.alpha;
+      const Kt = (c) => { try { return ratioTeX(c.K); } catch (e) { return null; } };
+      const fmtC = (o, kt) => 'Ordre $' + o + '$, gain statique $K=' + kt + '$';
+      const truthT = fmtC(E.order, Kt(E.c)); const seen = new Set([truthT]); const ch = [];
+      const cand = wr.map((w) => ({ o: ordOf(w.c), k: Kt(w.c) })).concat([{ o: E.order + 1, k: Kt(E.c) }, { o: Math.max(1, E.order - 1), k: Kt(E.c) }]);
+      for (const w of shuffle(cand)) { if (w.k === null) continue; const t = fmtC(w.o, w.k); if (seen.has(t)) continue; seen.add(t); ch.push(t); if (ch.length === 3) break; }
+      if (ch.length < 3) continue;
+      const fin = shuffle([{ t: truthT, ok: true }].concat(ch.map((t) => ({ t, ok: false }))));
+      return Object.assign(base('Le schéma bloc ci-dessous représente un système ' + WHO + '. Quels sont l\'ordre et le gain statique de la FTBF ?'), {
+        choiceKind: lit ? 'math' : 'text', choices: fin.map((x) => (lit ? x.t.replace(/\$/g, '').replace('Ordre ', '\\text{Ordre }').replace(', gain statique ', ',\\ \\text{gain statique }') : x.t)), correctIndex: fin.findIndex((x) => x.ok), steps, block: BF ? BF.draw(s) : '', model: specOf(s), ident: 'ok', kind: 'bf',
       });
     }
     throw new Error('qIdent');
@@ -3479,16 +3705,16 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       const st = explain(s, { ev, T: L, c: null }, { stopAfterLoop: true }).slice(2);
       const d0 = L.D[PM.low(L.D)];
       st.push('Cette forme est un seul rapport de deux polynômes, mais elle n\'est pas encore canonique : le terme constant du dénominateur est $' + mpTeX(L.D[0]) + '$ et doit être ramené à $1$ par division du numérateur et du dénominateur.');
-      return Object.assign(baseQ('s_frac', 'La fonction de transfert d\'une boucle fermée est donnée par la formule de Black. Simplifier l\'expression pour obtenir un seul rapport de deux polynômes en $p$, développés et rangés par puissances croissantes (sans chercher la forme canonique).'), {
+      return Object.assign(baseQ('s_frac', 'La FTBF d\'une boucle fermée est donnée par la formule de Black. Simplifier l\'expression pour obtenir un seul rapport de deux polynômes en $p$, développés et rangés par puissances croissantes (sans chercher la forme canonique).'), {
         math: 'H_{BF}(p)=' + blackTeX(s), choiceKind: 'math', choices: fin.map((x) => tx(x.r)), correctIndex: fin.findIndex((x) => x.ok), steps: st, model: specOf(s), frac: true,
       });
     }
     throw new Error('qFrac');
   }
-  const FAMILIES = { s_ft: () => (PR ? qPR(false) : qCanon(false)), s_lit: () => (PR ? qPR(true) : qCanon(true)), s_frac: qFrac, s_ident: qIdent };
+  const FAMILIES = { s_ft: () => qCanon(false), s_lit: () => qCanon(true), s_bo: () => qBO(rnd() < 0.3), s_pr: () => qPR(rnd() < 0.3), s_frac: qFrac, s_ident: qIdent };
   function generateSet(families, n, o) {
-    POS = !!(o && o.pos); PR = !!(o && o.pr);
-    try { return generateSetInner(families, n); } finally { POS = false; PR = false; }
+    POS = !!(o && o.pos);
+    try { return generateSetInner(families, n); } finally { POS = false; }
   }
   function generateSetInner(families, n) {
     const fams = families && families.length ? families : Object.keys(FAMILIES);
@@ -3500,7 +3726,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     return shuffle(out).map((q, i) => { q.id = i + 1; return q; });
   }
 
-  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, setPos: (v) => { POS = !!v; }, setPR: (v) => { PR = !!v; }, splitPR, makeSchemePR, qPR, qCanon, qIdent, qFrac, wxChoices, specOf };
+  const api = { Fr, F0, F1, FAM, PM, PF, mpConst, mpVar, mpOne, mpTeX, ptex, canon, canonTeX, canonEv, rfEv, evalScheme, checkScheme, makeScheme, randomScheme, explain, omegaXi, ratio, ratioTeX, ratioEv, chainTeX, prodTeX, factorTeX, dfDisplay, seriesOf, black, niceSecond, orderOf, classOf, gainB, t1B, intB, t2B, mpEv, mpMul, mpAdd, mpEq, mpIsConst, mpConstVal, mpFactor, mpHasNeg, polyOps, chainNum, chainDfs, instPoly, parseKey, dec, FAMILIES, generateSet, setPos: (v) => { POS = !!v; }, qBO, explainBO, splitPR, makeSchemePR, qPR, qCanon, qIdent, qFrac, wxChoices, specOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slci = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3751,11 +3977,22 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           [T('g'), T('9{,}81\\ \\mathrm{m/s^2}'), T('10\\ \\mathrm{m/s^2}')], [T('e^{-1}'), T('0{,}368'), T('0{,}37')], [T('\\dfrac{\\sqrt2}{2}'), T('0{,}707'), T('0{,}71')], [T('\\dfrac{\\sqrt3}{2}'), T('0{,}866'), T('0{,}87')],
         ]) + '<p>Angles remarquables : ' + T('\\sin30^\\circ=\\cos60^\\circ=\\dfrac12') + ', ' + T('\\sin45^\\circ=\\cos45^\\circ=\\dfrac{\\sqrt2}{2}') + ', ' + T('\\sin60^\\circ=\\cos30^\\circ=\\dfrac{\\sqrt3}{2}') + ', ' + T('\\tan30^\\circ=\\dfrac{\\sqrt3}{3}') + ', ' + T('\\tan45^\\circ=1') + ', ' + T('\\tan60^\\circ=\\sqrt3') + '.</p>' +
           '<p>Conversions : ' + T('1^\\circ\\approx0{,}0175\\ \\mathrm{rad}') + ' ; ' + T('1\\ \\mathrm{rad}\\approx57{,}3^\\circ') + '.</p>') +
-        card('Logarithmes', tbl(['Valeur', 'Approximation'], [
-          [T('\\log_{10}2'), T('0{,}30')], [T('\\log_{10}3'), T('0{,}48')], [T('\\log_{10}5=1-\\log_{10}2'), T('0{,}70')], [T('\\ln2'), T('0{,}69')], [T('\\ln3'), T('1{,}10')], [T('\\ln10'), T('2{,}30')],
-        ]) + '<p>' + T('\\log(ab)=\\log a+\\log b') + ', ' + T('\\log\\dfrac{a}{b}=\\log a-\\log b') + ', ' + T('\\log a^n=n\\log a') + ', ' + T('\\ln x=\\ln10\\times\\log_{10}x\\approx2{,}3\\,\\log_{10}x') + '.</p>') +
+        card('Logarithme décimal', '<p>Seul le logarithme en base ' + T('10') + ' est utilisé en S2I (décibels, diagrammes de Bode) : ' + T('\\log_{10}10^{n}=n') + '.</p>' + tbl(['Valeur', 'Approximation'], [
+          [T('\\log_{10}2'), T('0{,}30')], [T('\\log_{10}3'), T('0{,}48')], [T('\\log_{10}5=1-\\log_{10}2'), T('0{,}70')], [T('\\log_{10}\\sqrt{10}'), T('0{,}5')],
+        ]) + '<p>' + T('\\log(ab)=\\log a+\\log b') + ', ' + T('\\log\\dfrac{a}{b}=\\log a-\\log b') + ', ' + T('\\log a^n=n\\log a') + '.</p>') +
         card('Décibels', '<p>' + T('G_{dB}=20\\log_{10}\\left|H\\right|') + ' (rapport d\'amplitudes).</p>' + tbl(['Rapport d\'amplitudes', 'Gain'], [[T('\\sqrt2'), '3 dB'], ['2', '6 dB'], ['4', '12 dB'], ['5', '14 dB'], ['8', '18 dB'], ['10', '20 dB'], ['100', '40 dB'], [T('\\dfrac{1}{\\sqrt2}'), '−3 dB'], [T('\\dfrac12'), '−6 dB']])+
-          '<p>Pente de ' + T('-20') + ' dB par décade, soit environ ' + T('-6') + ' dB par octave, pour un premier ordre. Pour passer des décibels au rapport : ' + T('\\left|H\\right|=10^{G_{dB}/20}') + '.</p>') +
+          '<p>Pente de ' + T('-20') + ' dB par décade, soit environ ' + T('-6') + ' dB par octave, pour un premier ordre. Pour passer des décibels au rapport : ' + T('\\left|H\\right|=10^{G_{dB}/20}') + '.</p>' +
+          '<p>Blocs en série : les rapports se multiplient, donc les <b>gains en dB s\'additionnent</b>. Intégrateur ' + T('\\dfrac{K}{p}') + ' : ' + T('G_{dB}=20\\log_{10}K-20\\log_{10}\\omega') + ', pente de ' + T('-20') + ' dB par décade. Premier ordre au-delà de ' + T('\\omega_c') + ' : ' + T('\\left|H\\right|\\approx\\dfrac{K\\,\\omega_c}{\\omega}') + ', donc ' + T('G_{dB}\\approx20\\log_{10}K-20\\log_{10}\\dfrac{\\omega}{\\omega_c}') + '.</p>') +
+        card('Développement limité à l\'ordre 1', '<div class="rule">Pour ' + T('x') + ' petit devant ' + T('1') + ' (en pratique ' + T('\\left|x\\right|\\lesssim0{,}1') + ') :' + D('(1+x)^{\\alpha}\\approx1+\\alpha\\,x') + '</div>' + tbl(['Expression', 'Approximation'], [
+          [T('\\sqrt{1+x}'), T('1+\\dfrac{x}{2}')], [T('\\dfrac{1}{1+x}'), T('1-x')], [T('\\dfrac{1}{\\sqrt{1+x}}'), T('1-\\dfrac{x}{2}')], [T('(1+x)^{2}'), T('1+2x')], [T('(1+x)^{3}'), T('1+3x')], [T('(1-x)^{n}'), T('1-nx')],
+        ]) + '<p>Erreur commise : de l\'ordre de ' + T('\\dfrac{\\alpha(\\alpha-1)}{2}\\,x^{2}') + ', négligeable devant ' + T('\\alpha x') + ' si ' + T('x') + ' est petit.</p>' +
+          '<p>Variation relative : si une donnée varie de ' + T('x') + ' (en valeur relative) et si ' + T('G\\propto V^{\\alpha}') + ', alors ' + T('\\dfrac{\\Delta G}{G}\\approx\\alpha\\,x') + '. Par exemple ' + T('I=\\dfrac{bh^{3}}{12}') + ' augmente de ' + T('3\\times2\\ \\%=6\\ \\%') + ' quand ' + T('h') + ' augmente de ' + T('2\\ \\%') + '.</p>') +
+        card('Unités à maîtriser', UL([
+          T('1\\ \\mathrm{N.m}=1\\ \\mathrm{J}') + ' ; ' + T('1\\ \\mathrm{W}=1\\ \\mathrm{J/s}') + ' ; ' + T('1\\ \\mathrm{N}=1\\ \\mathrm{kg\\,m/s^{2}}') + ' ; le radian est sans dimension.',
+          T('1\\ \\mathrm{MPa}=1\\ \\mathrm{N/mm^{2}}') + ' ; ' + T('1\\ \\mathrm{GPa}=10^{3}\\ \\mathrm{MPa}') + ' ; ' + T('1\\ \\mathrm{kN}/\\mathrm{mm^{2}}=1\\ \\mathrm{GPa}') + '.',
+          T('1\\ \\mathrm{kWh}=3{,}6\\times10^{6}\\ \\mathrm{J}') + ' ; ' + T('1\\ \\mathrm{Wh}=3600\\ \\mathrm{J}') + ' ; ' + T('1\\ \\mathrm{Ah}=3600\\ \\mathrm{C}') + '.',
+          T('\\mathrm{N}\\times\\mathrm{mm}=\\mathrm{N.mm}') + ', avec ' + T('1\\ \\mathrm{N.mm}=10^{-3}\\ \\mathrm{N.m}') + ' ; ' + T('\\dfrac{1}{\\mathrm{ms}}=\\mathrm{krad/s}') + ' pour une pulsation.',
+        ])) +
         card('Grandeurs usuelles de S2I', UL([
           'Vitesse angulaire : ' + T('\\omega=\\dfrac{\\pi N}{30}\\approx0{,}105\\,N') + ' (' + T('\\omega') + ' en rad/s, ' + T('N') + ' en tr/min) ; réciproquement ' + T('N\\approx9{,}55\\,\\omega') + '.',
           'Puissance : ' + T('P=C\\,\\omega') + ' ; avec ' + T('P') + ' en kW et ' + T('N') + ' en tr/min, ' + T('C\\approx9550\\,\\dfrac{P}{N}') + ' en N.m.',
@@ -3763,18 +4000,26 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           'Vitesses : ' + T('v\\ (\\mathrm{m/s})=\\dfrac{v\\ (\\mathrm{km/h})}{3{,}6}') + '. Énergie : ' + T('1\\ \\mathrm{Wh}=3{,}6\\ \\mathrm{kJ}') + '.',
           'Matériaux : acier ' + T('E\\approx200\\ \\mathrm{GPa}') + ' (' + T('210') + ' pour l\'acier courant), aluminium ' + T('E\\approx70\\ \\mathrm{GPa}') + '.',
           'Premier ordre : ' + T('63\\ \\%') + ' de la valeur finale à ' + T('t=\\tau') + ', ' + T('95\\ \\%') + ' à ' + T('3\\tau') + ' ; ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.',
-          'Second ordre : premier dépassement ' + T('D_1=100\\,e^{-\\pi\\xi/\\sqrt{1-\\xi^2}}') + ' ; ' + T('\\xi=0{,}3\\Rightarrow37\\ \\%') + ', ' + T('\\xi=0{,}5\\Rightarrow16\\ \\%') + ', ' + T('\\xi=0{,}7\\Rightarrow5\\ \\%') + ' ; ' + T('Q\\approx\\dfrac{1}{2\\xi}') + ' si ' + T('\\xi') + ' est faible.',
+          'Second ordre faiblement amorti : facteur de résonance ' + T('Q\\approx\\dfrac{1}{2\\xi}') + ', soit ' + T('20\\log_{10}\\dfrac{1}{2\\xi}') + ' en décibels.',
         ]));
     }
     function numMethod() {
       return '<h1>Méthode : application numérique</h1>' +
         card('Démarche générale', OL([
-          'Écrire la formule littérale, puis vérifier l\'homogénéité des unités.',
-          'Convertir toutes les données en unités cohérentes (N, mm, MPa ou bien SI) et les écrire sous la forme ' + T('a\\times10^{n}') + '.',
-          'Estimer l\'ordre de grandeur du résultat avant tout calcul, pour détecter une erreur de puissance de dix.',
-          'Arrondir chaque donnée à un ou deux chiffres significatifs, en utilisant les valeurs de référence (inverses, ' + T('\\sqrt2') + ', ' + T('\\sqrt3') + ', ' + T('\\pi') + ', logarithmes).',
-          'Calculer en séparant les mantisses (entre ' + T('1') + ' et ' + T('10') + ') et les puissances de dix.',
-          'Écrire le résultat avec son unité et le comparer à l\'ordre de grandeur attendu.',
+          '<b>Formule</b> : écrire la formule littérale demandée.',
+          '<b>Unités</b> : écrire l\'unité de chaque donnée, puis simplifier les unités dans la formule pour obtenir l\'unité du résultat (voir la carte « Unités : méthode »).',
+          '<b>Conversion</b> : si nécessaire, convertir pour obtenir des unités cohérentes (N, mm, MPa ou bien SI) ; écrire chaque donnée sous la forme ' + T('a\\times10^{n}') + '.',
+          '<b>Ordre de grandeur</b> : estimer le résultat avant tout calcul, pour détecter une erreur de puissance de dix.',
+          '<b>Arrondis</b> : arrondir chaque donnée à un ou deux chiffres significatifs avec les valeurs de référence (inverses, ' + T('\\sqrt2') + ', ' + T('\\sqrt3') + ', ' + T('\\pi') + ', logarithmes décimaux).',
+          '<b>Calcul</b> : traiter séparément les mantisses (entre ' + T('1') + ' et ' + T('10') + ') et les puissances de dix.',
+          '<b>Résultat</b> : l\'écrire avec son unité et le comparer à l\'ordre de grandeur attendu.',
+        ])) +
+        card('Unités : méthode', '<p>Traiter les unités comme des variables algébriques : elles se multiplient, se divisent et se simplifient.</p>' + UL([
+          'Exemple 1 : ' + T('P=C\\,\\omega') + ' avec ' + T('C') + ' en N.m et ' + T('\\omega') + ' en rad/s : ' + T('\\mathrm{N.m}\\times\\mathrm{rad/s}=\\mathrm{J/s}=\\mathrm{W}') + '.',
+          'Exemple 2 : ' + T('\\sigma=\\dfrac{N}{S}') + ' avec ' + T('N') + ' en N et ' + T('S') + ' en mm² : ' + T('\\dfrac{\\mathrm{N}}{\\mathrm{mm^{2}}}=\\mathrm{MPa}') + '.',
+          'Exemple 3 : ' + T('E=P\\,t') + ' avec ' + T('P') + ' en kW et ' + T('t') + ' en s : ' + T('\\mathrm{kW}\\times\\mathrm{s}=10^{3}\\ \\mathrm{J}=\\mathrm{kJ}') + '.',
+          'Une valeur n\'a de sens qu\'avec son unité : ' + T('5\\ \\mathrm{MPa}') + ' et ' + T('5\\ \\mathrm{GPa}') + ' diffèrent d\'un facteur ' + T('10^{3}') + '.',
+          'Les deux membres d\'une égalité ont la même unité (<b>homogénéité</b>) ; on n\'additionne que des grandeurs de même unité.',
         ])) +
         card('Maîtriser la marge de 10 %', UL([
           'Pour un produit ou un quotient, les <b>erreurs relatives s\'ajoutent</b> : arrondir deux données de ' + T('4\\ \\%') + ' chacune donne jusqu\'à ' + T('8\\ \\%') + ' d\'écart.',
@@ -3797,17 +4042,26 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           'Rationaliser : ' + T('\\dfrac{k}{\\sqrt2}=\\dfrac{k\\sqrt2}{2}') + ' et ' + T('\\dfrac{k}{\\sqrt3}=\\dfrac{k\\sqrt3}{3}') + '.',
           'Diviser par ' + T('3{,}6') + ' : diviser par ' + T('4') + ' puis ajouter ' + T('10\\ \\%') + '.',
         ])) +
-        card('Logarithmes et décibels', UL([
-          'Décomposer en facteurs ' + T('2') + ', ' + T('3') + ', ' + T('5=\\dfrac{10}{2}') + ' et puissances de ' + T('10') + ', puis additionner les logarithmes.',
+        card('Logarithmes décimaux et décibels', UL([
+          'Décomposer en facteurs ' + T('2') + ', ' + T('3') + ', ' + T('5=\\dfrac{10}{2}') + ' et puissances de ' + T('10') + ', puis additionner les logarithmes décimaux.',
           'Pour les décibels, associer ' + T('\\times2\\to+6') + ' dB, ' + T('\\times10\\to+20') + ' dB, ' + T('\\times\\sqrt2\\to+3') + ' dB ; diviser change le signe.',
           'Exemple : ' + T('20\\log_{10}50=20\\log_{10}\\dfrac{100}{2}=40-6=34') + ' dB.',
+          'Blocs en série : additionner les gains en dB. Intégrateur ' + T('\\dfrac{10}{p}') + ' à ' + T('\\omega=100') + ' rad/s : ' + T('20\\log_{10}10-20\\log_{10}100=20-40=-20') + ' dB.',
         ])) +
+        card('Développement limité : méthode', OL([
+          '<b>Repérer</b> une expression de la forme ' + T('(\\text{grand terme}\\pm\\text{petit terme})^{\\alpha}') + ' : un terme domine, l\'autre est petit.',
+          '<b>Mettre en facteur</b> le terme dominant pour faire apparaître ' + T('1+x') + ', avec ' + T('x') + ' petit devant ' + T('1') + ' : ' + T('(D+e)^{\\alpha}=D^{\\alpha}\\left(1+\\dfrac{e}{D}\\right)^{\\alpha}') + '.',
+          '<b>Appliquer</b> ' + T('(1+x)^{\\alpha}\\approx1+\\alpha x') + ' ; vérifier que ' + T('\\left|\\alpha x\\right|') + ' reste inférieur à ' + T('0{,}1') + ' environ.',
+          '<b>Simplifier</b> : les termes d\'ordre zéro peuvent s\'annuler, il reste alors un terme proportionnel à ' + T('x') + '.',
+          '<b>Calculer</b> la valeur numérique avec les arrondis habituels, puis la comparer à l\'ordre de grandeur attendu.',
+        ]) + '<p><b>Exemple</b> : tube mince, ' + T('I=\\dfrac{\\pi}{64}\\left(D^{4}-d^{4}\\right)') + ' avec ' + T('d=D-2t') + ' et ' + T('t\\ll D') + ' :</p>' + D('I=\\dfrac{\\pi D^{4}}{64}\\left[1-\\left(1-\\dfrac{2t}{D}\\right)^{4}\\right]\\approx\\dfrac{\\pi D^{4}}{64}\\times\\dfrac{8t}{D}=\\dfrac{\\pi D^{3}t}{8}') + '<p>Avec ' + T('D=100') + ' mm et ' + T('t=2') + ' mm : ' + T('I\\approx\\dfrac{3{,}14\\times100^{3}\\times2}{8}\\approx7{,}9\\times10^{5}\\ \\mathrm{mm^{4}}') + ', pour une valeur exacte voisine de ' + T('7{,}4\\times10^{5}\\ \\mathrm{mm^{4}}') + '.</p>') +
         card('Pièges courants', UL([
           'Oublier le facteur ' + T('2') + ' de ' + T('2\\pi') + ' dans la conversion de tr/min en rad/s, ou oublier le ' + T('60') + '.',
           'Décalage d\'une puissance de dix : toujours vérifier l\'ordre de grandeur.',
           'Mélanger N.m et N.mm, GPa et MPa (' + T('1\\ \\mathrm{GPa}=10^3\\ \\mathrm{MPa}') + ').',
           'Confondre rapport d\'amplitudes et rapport de puissances en décibels (' + T('20\\log') + ' contre ' + T('10\\log') + ').',
           'Utiliser le rendement hors régime permanent.',
+          'Développement limité : oublier le signe de ' + T('\\alpha') + ' (un exposant négatif inverse le sens de variation), ou l\'appliquer quand ' + T('x') + ' n\'est pas petit.',
         ]));
     }
 
@@ -3818,7 +4072,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Fonction de transfert', '<p>Pour un système linéaire continu invariant, avec des conditions initiales nulles, la fonction de transfert est le rapport de la transformée de Laplace de la sortie sur celle de l\'entrée. La variable de Laplace est notée ' + T('p') + '.</p>' + D('H(p)=\\dfrac{S(p)}{E(p)}') +
           '<p>Dans un schéma bloc, la sortie ' + T('S(p)') + ' est à droite et l\'entrée ' + T('E(p)') + ' à gauche.</p>') +
         card('Forme canonique générale', D('H(p)=\\dfrac{K\\left(1+b_1p+\\dots\\right)}{p^{\\alpha}\\left(1+a_1p+a_2p^{2}+\\dots+a_np^{n}\\right)}') +
-          UL(['Le terme de plus bas degré de chaque polynôme vaut ' + T('1') + ' : numérateur et dénominateur sont <b>normalisés</b>.', T('K') + ' : gain (gain statique si ' + T('\\alpha=0') + ').', T('\\alpha') + ' : <b>classe</b>, nombre d\'intégrateurs, c\'est-à-dire puissance de ' + T('p') + ' en facteur au dénominateur.', '<b>Ordre</b> : degré du dénominateur, soit ' + T('\\alpha+n') + '.'])) +
+          UL(['Le terme de plus bas degré de chaque polynôme vaut ' + T('1') + ' : numérateur et dénominateur sont <b>normalisés</b>.', T('K') + ' : gain (gain statique si ' + T('\\alpha=0') + ').', T('\\alpha') + ' : <b>classe</b>, nombre d\'intégrateurs, c\'est-à-dire puissance de ' + T('p') + ' en facteur au dénominateur.', '<b>Ordre</b> : degré du dénominateur, soit ' + T('\\alpha+n') + '.']) +
+          '<p><b>La classe n\'a d\'utilité que pour la FTBO</b> : c\'est la seule fonction de transfert pour laquelle le cours donne des résultats en fonction de la classe. Pour la FTBF, la forme canonique (gain, ordre, ' + T('\\xi') + ', ' + T('\\omega_0') + ') reste la forme finale à viser.</p>') +
         card('Premier ordre', D('H(p)=\\dfrac{K}{1+\\tau p}') + UL([T('K') + ' : gain statique.', T('\\tau') + ' : constante de temps, en s.', 'Pulsation de cassure : ' + T('\\omega_c=\\dfrac{1}{\\tau}') + '.'])) +
         card('Second ordre', D('H(p)=\\dfrac{K}{1+\\dfrac{2\\xi}{\\omega_0}\\,p+\\dfrac{p^{2}}{\\omega_0^{2}}}') +
           UL([T('K') + ' : gain statique.', T('\\xi') + ' : coefficient d\'amortissement, sans unité.', T('\\omega_0') + ' : pulsation propre non amortie, en rad/s.', ]) + '<p><b>Régimes de fonctionnement</b> selon la valeur de ' + T('\\xi') + ' :</p>' +
@@ -3835,12 +4090,15 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
           '<div class="rule"><b>Formule de Black.</b> Chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + ', retour négatif :' + D('H_{BF}(p)=\\dfrac{G(p)}{1+H_r(p)\\,G(p)}') + 'Retour unitaire : ' + T('H_r(p)=1') + '. La boucle ouverte est le produit ' + T('G(p)\\,H_r(p)') + '.<br><b>Retour positif</b> (signe ' + T('+') + ' sur le retour du comparateur) : le signe devant ' + T('H_r(p)\\,G(p)') + ' s\'inverse :' + D('H_{BF}(p)=\\dfrac{G(p)}{1-H_r(p)\\,G(p)}') + '</div>' +
           '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'G(p)', denTex: '' }], fb: [{ numTex: 'H_{r}(p)', denTex: '' }], post: [], lit: true }) + '<figcaption>Boucle à retour négatif : chaîne directe ' + T('G(p)') + ', chaîne de retour ' + T('H_r(p)') + '.</figcaption></figure>' +
           '<p>Les blocs situés avant le comparateur ou après la prise de sortie se multiplient avec ' + T('H_{BF}(p)') + '.</p>') +
+        card('FTBO et FTBF', '<div class="rule"><b>FTBO</b> : fonction de transfert en boucle ouverte, lue sur la <b>boucle seule</b>. Elle part du signal ' + T('\\varepsilon(p)') + ', juste après le comparateur, suit la chaîne directe puis la chaîne de retour, et s\'arrête au signal renvoyé vers le comparateur.' + D('\\mathrm{FTBO}(p)=G(p)\\,H_r(p)') + 'Le <b>signe du comparateur n\'en fait pas partie</b>, ni les blocs situés avant le comparateur ou après la prise de sortie.</div>' +
+          '<div class="rule"><b>FTBF</b> : fonction de transfert en boucle fermée, ' + T('\\dfrac{S(p)}{E(p)}') + ' :' + D('\\mathrm{FTBF}(p)=\\dfrac{G(p)}{1\\pm \\mathrm{FTBO}(p)}') + 'Le signe au dénominateur est l\'opposé de celui du comparateur sur le retour : ' + T('1+FTBO') + ' pour un retour négatif, ' + T('1-FTBO') + ' pour un retour positif.</div>' +
+          UL(['La FTBO sert à étudier la <b>stabilité</b> et la <b>précision</b> ; la FTBF décrit le comportement du système bouclé.', 'Dans un schéma de poursuite et régulation, la FTBO est <b>la même</b> dans les deux cas : mettre une entrée à zéro ne modifie pas la boucle.', 'Les deux sont à mettre sous forme canonique ; pour la FTBO, la classe donne le nombre d\'intégrateurs de la boucle.'])) +
         card('Poursuite et régulation', '<p>Un second sommateur introduit une <b>perturbation</b> ' + T('E_2(p)') + ' en plus de la <b>consigne</b> ' + T('E_1(p)') + '.</p>' +
           '<figure class="fig blockfig">' + root.BlockFigs.draw({ pre: [], direct: [{ numTex: 'A(p)', denTex: '' }, { numTex: 'B(p)', denTex: '' }], fb: [{ numTex: 'C(p)', denTex: '' }], post: [], lit: true, dist: { at: 1 } }) + '<figcaption>Consigne ' + T('E_1(p)') + ', perturbation ' + T('E_2(p)') + ', sortie ' + T('S(p)') + '. Bloc ' + T('A(p)') + ' avant le sommateur de perturbation, bloc ' + T('B(p)') + ' après, retour ' + T('C(p)') + '.</figcaption></figure>' +
           UL(['<b>Poursuite</b> : perturbation nulle, ' + T('E_2(p)=0') + '.', '<b>Régulation</b> : consigne nulle, ' + T('E_1(p)=0') + '.']) +
           '<div class="rule"><b>Principe de superposition.</b> Le système est linéaire : les effets des deux entrées s\'additionnent.' + D('\\begin{aligned}S(p)&=H_{pours}(p)\\,E_1(p)\\\\&\\quad+H_{reg}(p)\\,E_2(p)\\end{aligned}') +
           D('H_{pours}(p)=\\dfrac{A(p)\\,B(p)}{1+A(p)\\,B(p)\\,C(p)}') + D('H_{reg}(p)=\\dfrac{B(p)}{1+A(p)\\,B(p)\\,C(p)}') +
-          'Les deux fonctions de transfert ont le <b>même dénominateur</b> ' + T('1+FTBO(p)') + ', avec ' + T('FTBO(p)=A(p)\\,B(p)\\,C(p)') + '. Avec un retour positif, ce dénominateur devient ' + T('1-FTBO(p)') + '.</div>' +
+          'Les deux fonctions de transfert ont le <b>même dénominateur</b> ' + T('1+\\mathrm{FTBO}(p)') + ', avec ' + T('\\mathrm{FTBO}(p)=A(p)\\,B(p)\\,C(p)') + '. Avec un retour positif, ce dénominateur devient ' + T('1-\\mathrm{FTBO}(p)') + '.</div>' +
           '<p>Pour un schéma plus complexe, écrire les équations de chaque bloc (calcul littéral) est souvent plus rapide que la manipulation du schéma.</p>');
     }
     function slciMethod() {
@@ -3850,7 +4108,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       return '<h1>Méthode : forme canonique des SLCI</h1>' +
         card('Démarche', OL([
           '<b>Repérer</b> la chaîne directe ' + T('G(p)') + ' de la boucle (produit des blocs en série), la chaîne de retour ' + T('H_r(p)') + ' (capteur, ou ' + T('1') + ' si le retour est unitaire) et les blocs situés avant ou après la boucle.',
-          '<b>Appliquer la formule de Black</b> : ' + T('H_{BF}=\\dfrac{G}{1+H_rG}') + '.',
+          '<b>Appliquer la formule de Black</b> pour la FTBF : ' + T('H_{BF}=\\dfrac{G}{1+H_rG}') + ' (' + T('1-H_rG') + ' pour un retour positif).',
           '<b>Supprimer les fractions de fractions</b> : multiplier numérateur et dénominateur de la grande fraction par le produit des dénominateurs de ' + T('G') + ' et de ' + T('H_r') + '. Il ne reste qu\'un seul trait de fraction.',
           '<b>Développer</b> pour obtenir un polynôme au numérateur et un polynôme au dénominateur, rangés par puissances croissantes de ' + T('p') + '. Multiplier ensuite par les blocs extérieurs à la boucle.',
           '<b>Normaliser</b> : repérer le terme de plus bas degré non nul du dénominateur, ' + T('d_0') + ' (le terme constant si la classe est ' + T('0') + '), et diviser numérateur et dénominateur par ' + T('d_0') + '. Si le dénominateur n\'a pas de terme constant, mettre ' + T('p^{\\alpha}') + ' en facteur au préalable.',
@@ -3859,11 +4117,19 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Exemple traité', fig + D('H_{BF}(p)=\\dfrac{\\dfrac{K_1}{p(1+\\tau_1p)}}{1+K_c\\times\\dfrac{K_1}{p(1+\\tau_1p)}}=\\dfrac{K_1}{p(1+\\tau_1p)+K_cK_1}=\\dfrac{K_1}{K_1K_c+p+\\tau_1p^{2}}') +
           '<p>Le terme constant est ' + T('d_0=K_1K_c') + ' : division du numérateur et du dénominateur par ' + T('K_1K_c') + ' :</p>' + D('H_{BF}(p)=\\dfrac{\\dfrac{1}{K_c}}{1+\\dfrac{1}{K_1K_c}\\,p+\\dfrac{\\tau_1}{K_1K_c}\\,p^{2}}') +
           '<p>Ordre ' + T('2') + ', classe ' + T('0') + ', gain statique ' + T('K=\\dfrac{1}{K_c}') + '. Identification : ' + T('\\omega_0=\\sqrt{\\dfrac{K_1K_c}{\\tau_1}}') + ' et ' + T('\\xi=\\dfrac{1}{2\\sqrt{K_1K_c\\tau_1}}') + '.</p>') +
+        card('FTBO : méthode', OL([
+          '<b>Définir la boucle</b> : partir de ' + T('\\varepsilon(p)') + ', juste après le comparateur, suivre la chaîne directe puis la chaîne de retour, jusqu\'au signal renvoyé vers le comparateur.',
+          '<b>Exclure</b> le signe du comparateur et les blocs situés avant le comparateur ou après la prise de sortie.',
+          '<b>Multiplier</b> les blocs rencontrés : ' + T('\\mathrm{FTBO}(p)=G(p)\\,H_r(p)') + ' (retour unitaire : ' + T('H_r=1') + ', donc ' + T('FTBO=G') + ').',
+          '<b>Mettre sous forme canonique</b> : développer, puis diviser par le terme de plus bas degré non nul du dénominateur. Il n\'y a pas de fraction de fractions à traiter.',
+          '<b>Identifier</b> la classe, c\'est-à-dire le nombre d\'intégrateurs de la boucle, l\'ordre et le gain.',
+        ]) + '<p><b>Exemple</b> : ' + T('G(p)=\\dfrac{K_1}{p\\,(1+\\tau_1p)}') + ' et ' + T('H_r(p)=K_c') + ' :</p>' + D('\\mathrm{FTBO}(p)=\\dfrac{K_1}{p\\,(1+\\tau_1p)}\\times K_c=\\dfrac{K_1K_c}{p\\,(1+\\tau_1p)}') + '<p>Forme canonique déjà obtenue : classe ' + T('1') + ', ordre ' + T('2') + ', gain ' + T('K=K_1K_c') + '.</p>') +
         card('Poursuite et régulation', OL([
           '<b>Repérer</b> les trois blocs : ' + T('A(p)') + ' avant le sommateur de perturbation, ' + T('B(p)') + ' après, ' + T('C(p)') + ' sur le retour (' + T('C(p)=1') + ' si le retour est unitaire), puis la consigne ' + T('E_1(p)') + ' et la perturbation ' + T('E_2(p)') + '.',
           '<b>Superposition</b> : écrire ' + T('S(p)=H_{pours}(p)\\,E_1(p)+H_{reg}(p)\\,E_2(p)') + '. Chaque fonction de transfert se calcule avec <b>une seule entrée non nulle</b>.',
           '<b>Poursuite</b> (' + T('E_2=0') + ') : le sommateur de perturbation disparaît. Boucle simple de chaîne directe ' + T('A\\,B') + ' et de retour ' + T('C') + ' :' + D('H_{pours}=\\dfrac{AB}{1+ABC}'),
           '<b>Régulation</b> (' + T('E_1=0') + ') : la consigne est nulle, le comparateur ne reçoit que le retour. Deux lectures équivalentes. <i>Calcul littéral</i> : ' + T('\\varepsilon=-C\\,S') + ' et ' + T('S=B\\,(E_2+A\\,\\varepsilon)') + ', donc ' + T('S\\,(1+ABC)=B\\,E_2') + '. <i>Boucle simple vue depuis ' + T('E_2') + '</i> : chaîne directe ' + T('B') + ', chaîne de retour ' + T('A\\,C') + '.' + D('H_{reg}=\\dfrac{B}{1+B\\,(A\\,C)}=\\dfrac{B}{1+ABC}'),
+          '<b>FTBO</b> : ' + T('\\mathrm{FTBO}(p)=A(p)\\,B(p)\\,C(p)') + ', identique en poursuite et en régulation, car la boucle ne change pas quand une entrée est mise à zéro.',
           '<b>Contrôler</b> : les deux fonctions de transfert ont le même dénominateur ' + T('1+ABC') + ' ; le numérateur est ' + T('AB') + ' pour la poursuite et ' + T('B') + ' pour la régulation.',
           '<b>Mettre chacune sous forme canonique</b> avec la démarche habituelle (fractions de fractions, développement, normalisation).',
         ]) +
@@ -3880,12 +4146,14 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
         card('Pièges courants', UL([
           'Oublier le <b>signe</b> de la boucle : un signe ' + T('-') + ' sur le retour du comparateur donne ' + T('1+H_rG') + ', un signe ' + T('+') + ' donne ' + T('1-H_rG') + '.',
           'Oublier le capteur dans le dénominateur, ou le multiplier au numérateur.',
+          'FTBO : inclure le signe du comparateur ou les blocs situés hors de la boucle, ou oublier la chaîne de retour. En régulation, ne pas oublier ' + T('A') + ' : ' + T('FTBO=ABC') + ' et non ' + T('BC') + '.',
+          'Confondre FTBO et FTBF : la FTBO est un simple produit de blocs, la FTBF contient le dénominateur ' + T('1\\pm FTBO') + '.',
           'Poursuite et régulation : oublier le bloc ' + T('A') + ' dans le dénominateur de la régulation. Le dénominateur ' + T('1+ABC') + ' est le même pour les deux, jamais ' + T('1+BC') + '.',
           'Confondre les deux fonctions de transfert : le numérateur est ' + T('AB') + ' pour la consigne ' + T('E_1') + ' et ' + T('B') + ' pour la perturbation ' + T('E_2') + '.',
           'Ne diviser que le terme constant par ' + T('d_0') + ' en oubliant les autres coefficients, ou oublier de diviser le gain.',
           'Inverser ' + T('\\omega_0') + ' : ' + T('\\omega_0=1/\\sqrt{a_2}') + ' et non ' + T('\\sqrt{a_2}') + '.',
           'Oublier les blocs situés hors de la boucle, qui modifient le gain, l\'ordre et la classe.',
-          'Une boucle fermée dont la chaîne directe contient un intégrateur n\'est pas forcément de classe ' + T('1') + ' : la classe se lit sur le dénominateur final.',
+          'La FTBF d\'une boucle dont la chaîne directe contient un intégrateur n\'est pas forcément de classe ' + T('1') + ' : la classe se lit sur le dénominateur final. La classe de la FTBO, elle, compte les intégrateurs de la boucle.',
         ]));
     }
     return { calc, deriv, liaisons, rdm, num, slci, calcMethod, derivMethod, numMethod, slciMethod };
@@ -3972,8 +4240,8 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     },
     num: {
       title: 'Application numérique', color: 'var(--lime)',
-      desc: 'Calculs de tête à 10 % près : produits, inverses, racines, logarithmes, décibels et grandeurs de S2I.',
-      intro: 'Applications numériques simples, réalisables de tête, avec une marge d\'erreur de 10 %. Chaque correction explique la méthode de calcul. Une aide de calcul facultative peut être affichée sous l\'énoncé.',
+      desc: 'Calculs de tête à 10 % près : produits, inverses, racines, logarithmes décimaux, décibels, unités, développements limités et grandeurs de S2I.',
+      intro: 'Applications numériques simples, réalisables de tête, avec une marge d\'erreur de 10 %. Chaque correction explique la méthode de calcul. Certaines questions demandent aussi de trouver l\'unité du résultat, ou d\'utiliser un développement limité à l\'ordre 1. Une aide de calcul facultative peut être affichée sous l\'énoncé.',
       fams: Object.keys(NA.FAM).map((k) => [k, NA.FAM[k]]),
       gen: (fams, n) => NA.generateSet(fams, n),
       options: [['aids', 'Afficher une aide de calcul sous l\'énoncé']],
@@ -3981,11 +4249,11 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     },
     slci: {
       title: 'Forme canonique des SLCI', color: 'var(--green)',
-      desc: 'Schémas blocs avec boucle de retour : formule de Black, fractions de fractions, forme canonique, ordre, classe, ξ et ω0.',
-      intro: 'Chaque exercice présente un schéma bloc, avec ou sans capteur, avec éventuellement des blocs avant ou après la boucle. Il s\'agit de calculer la fonction de transfert H(p)=S(p)/E(p) : formule de Black, suppression des fractions de fractions, mise sous forme canonique, puis identification de l\'ordre, de la classe, du gain, de ξ et de ω0. La correction détaille chaque étape.',
+      desc: 'Schémas blocs avec boucle de retour : FTBF et FTBO, formule de Black, poursuite et régulation, forme canonique, ordre, classe, ξ et ω0.',
+      intro: 'Chaque exercice présente un schéma bloc, avec ou sans capteur, avec éventuellement des blocs avant ou après la boucle. Les types de questions portent sur la fonction de transfert en boucle fermée (FTBF), la fonction de transfert en boucle ouverte (FTBO, définie sur la boucle seule : de ε(p), juste après le comparateur, jusqu\'au signal renvoyé vers le comparateur), la poursuite et la régulation (second sommateur et principe de superposition), les fractions de fractions et l\'identification de l\'ordre, de la classe, du gain, de ξ et de ω0. La correction détaille chaque étape.',
       fams: Object.keys(SL.FAM).map((k) => [k, SL.FAM[k]]),
-      gen: (fams, n, o) => SL.generateSet(fams, n, { pos: o.pos, pr: o.pr }),
-      options: [['pos', 'Retour positif possible (signe + sur le retour du comparateur)'], ['pr', 'Poursuite et régulation : schémas avec perturbation (second sommateur), pour les types « fonction de transfert »']], recap: Recaps.slci, method: Recaps.slciMethod,
+      gen: (fams, n, o) => SL.generateSet(fams, n, { pos: o.pos }),
+      options: [['pos', 'Retour positif possible (signe + sur le retour du comparateur)']], recap: Recaps.slci, method: Recaps.slciMethod,
     },
     rdm: {
       title: 'Résistance des matériaux', color: 'var(--orange)',
@@ -4000,12 +4268,17 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
   const famLabel = {};
   ORDER.forEach((t) => THEMES[t].fams.forEach(([k, l]) => { famLabel[k] = l; }));
 
+  const NEWFAMS = ['s_bo', 's_pr', 'n_unit']; // familles apparues après la première version
   const saved = store.get('qcm-settings', {});
   const settings = { n: saved.n || 10, mode: saved.mode || 'train', themes: saved.themes || {} };
   ORDER.forEach((t) => {
     const s = settings.themes[t] || {};
-    const valid = (s.fams || []).filter((k) => THEMES[t].fams.some((f) => f[0] === k));
-    settings.themes[t] = { fams: valid.length ? valid : THEMES[t].fams.map((f) => f[0]), coefs: !!s.coefs, pos: !!s.pos, pr: !!s.pr, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
+    const allKeys = THEMES[t].fams.map((f) => f[0]);
+    let valid = (s.fams || []).filter((k) => allKeys.includes(k));
+    // familles ajoutées depuis l'enregistrement des réglages : sélectionnées par défaut
+    const known = Array.isArray(s.known) ? s.known : allKeys.filter((k) => !NEWFAMS.includes(k));
+    allKeys.forEach((k) => { if (!known.includes(k) && !valid.includes(k)) valid.push(k); });
+    settings.themes[t] = { fams: valid.length ? valid : allKeys, known: allKeys, coefs: !!s.coefs, pos: !!s.pos, aids: !!s.aids, choice: ['single', 'multi', 'mix'].includes(s.choice) ? s.choice : 'single' };
   });
   const save = () => store.set('qcm-settings', settings);
   let cur = null;      // thème courant

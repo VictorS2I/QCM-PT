@@ -728,8 +728,9 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     }
     return 'Dans la suite $' + suite + '$, ' + I(V) + ' puis ' + I(U) + ' se suivent dans le sens direct : ici les indices sont intervertis (suite négative), donc le résultat est $-$ ' + I(W) + '.';
   }
+  const RULE_BOX = '!! Règle de la main droite : le pouce donne le premier vecteur, l\'index le second, le majeur le résultat. Suite positive $\\overrightarrow{x}\\ \\overrightarrow{y}\\ \\overrightarrow{z}\\ \\overrightarrow{x}$ : signe $+$ ; indices intervertis : signe $-$.';
   function explainCross(u, v, bases, outBase) {
-    const ex = [];
+    const ex = [RULE_BOX];
     const d = decompInfo(u, v, bases);
     const U = vtex(u), V = vtex(v);
     const resV = E.cross(bases[u.b][u.i], bases[v.b][v.i]);
@@ -840,6 +841,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       steps.push('Deux des trois vecteurs sont colinéaires (ici égaux au signe près) : les trois vecteurs sont coplanaires, donc le produit mixte est nul.');
     } else {
       const crTex = E.vecResultTex(cr, bases, outBase);
+      if (u.b === v.b) steps.push(RULE_BOX, sameBaseRule(u, v));
       steps.push('Calcul du produit vectoriel des deux premiers vecteurs :' + M(wedgeTex(vtex(u), vtex(v)) + ' = ' + crTex));
       steps.push('Puis produit scalaire avec le troisième vecteur :' + M('\\left(' + crTex + '\\right)\\cdot ' + vtex(w) + ' = ' + E.polyTex(baseRes)));
       if (E.isZeroPoly(baseRes)) steps.push('Résultat nul : les trois vecteurs sont coplanaires.');
@@ -2245,6 +2247,11 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
     else {
       steps.push('Méthode graphique : le vecteur tourne dans le plan perpendiculaire à l\'axe. Sa dérivée s\'obtient en le tournant de ' + t('90^{\\circ}') + ' dans le sens positif de l\'angle orienté, puis en multipliant par la vitesse de rotation ' + t(rev ? '-' + ri.gd : ri.gd) + '.');
     }
+    if (i !== ri.k) {
+      const ax = vn(j, ri.k), vv = vn(j, i), kk = 3 - ri.k - i, res = vn(j, kk);
+      const dir = (ri.k + 1) % 3 === i;
+      steps.push('!! Règle de la main droite pour le produit vectoriel ' + t(ax + '\\wedge' + vv) + ' : ' + (dir ? 'dans la suite ' + t('x\\ y\\ z\\ x') + ', ' + t(ax) + ' puis ' + t(vv) + ' se suivent (suite positive), donc ' + t(ax + '\\wedge' + vv + '=' + res) + '.' : t(vv) + ' puis ' + t(ax) + ' se suivent dans la suite ' + t('x\\ y\\ z\\ x') + ' : les indices sont intervertis (suite négative), donc ' + t(ax + '\\wedge' + vv + '=-' + res) + '.'));
+    }
     steps.push(M(ddt(vn(j, i), m) + '=' + om(j, m) + '\\wedge' + vn(j, i) + '=' + omTex + '\\wedge' + vn(j, i) + '=\\boxed{' + D.tex + '}'));
     return base({ family: 'd_graph', famLabel: FAM.d_graph, figure: mkFig(k1, k2, j, i), text: 'Calculer la dérivée vectorielle suivante, par la méthode graphique.', math: ddt(vn(j, i), m), choices: A.choices, correctIndex: A.correctIndex, steps, meta: { k1, k2, j, m, i, P, ob, struct: D.struct } });
   }
@@ -2314,6 +2321,7 @@ svg.evo { width: 100%; height: auto; display: block; margin: 8px 0 4px; }
       if (!bv || bv.b !== j) proj.push(t(vn(b0, kk) + '=' + E.coordsTex(E.coords(ax, bs, j), j)));
     });
     if (proj.length) steps.push('Projection dans la base ' + t(bn(j)) + ' du vecteur rotation qui n\'y est pas écrit : ' + proj.join(' ; ') + '.');
+    steps.push('!! Chaque produit vectoriel entre deux vecteurs d\'une même base se lit par la règle de la main droite : suite positive ' + t('x\\ y\\ z\\ x') + ' pour le signe ' + t('+') + ', indices intervertis pour le signe ' + t('-') + '.');
     steps.push('Second terme : ' + M(om(1, m) + '\\wedge' + vn(j, i) + '=(' + omTxt(1, m) + ')\\wedge' + vn(j, i) + '=' + dexTex(T2, bs, ob).tex));
     steps.push(M(ddt(vn(j, i), m) + '=\\boxed{' + D.tex + '}'));
     return base({ family: 'd_bour', famLabel: FAM.d_bour, figure: mkFig(k1, k2, j, i), text: 'Calculer la dérivée vectorielle suivante, par la formule de Bour (deux rotations).', math: ddt(vn(j, i), m), choices: A.choices, correctIndex: A.correctIndex, steps, meta: { k1, k2, j, m, i, P, ob, struct: D.struct } });
